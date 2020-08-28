@@ -1,0 +1,69 @@
+[package]
+name = "embedded-msgpack"
+version = "0.1.0"
+authors = ["Sympatron <35803463+Sympatron@users.noreply.github.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+num-traits = { version = "*", default-features = false }
+byteorder = { version = "~1", default-features = false }
+zerocopy = { version = "~0.3", default-features = false }
+managed = { version = "~0.8", default-features = false }
+panic-halt = { version = "*", optional = true }
+cortex-m = { version = "*", optional = true }
+cortex-m-rt = { version = "*", optional = true }
+rand = { version = "*", optional = true, default-features = false }
+alloc-cortex-m = { version = "*", optional = true }
+
+[features]
+default = [
+    "panic-halt",
+    "cortex-m",
+    "cortex-m-rt",
+    "rand",
+    "u64",
+    "i64",
+    "timestamp",
+    "ext8", # "ext16",    # "ext32",
+]
+std = ["managed/std", "byteorder/std", "num-traits/std"]
+alloc = ["alloc-cortex-m", "managed/alloc"]
+u64 = []
+i64 = []
+bin32 = []
+map32 = []
+array16 = []
+array32 = ["array16"]
+str16 = []
+str32 = ["str16"]
+ext = []
+fixext = ["ext"]
+ext8 = ["ext"]
+ext16 = ["ext"]
+ext32 = ["ext"]
+timestamp = ["ext"]
+timestamp96 = ["timestamp", "ext8"]
+compliant = [
+    "i64",
+    "u64",
+    "bin32",
+    "map32",
+    "array32",
+    "str32",
+    "ext",
+    "fixext",
+    "ext8",
+    "ext16",
+    "ext32",
+    "timestamp",
+    "timestamp96",
+]
+
+
+[profile.release]
+# codegen-units = 1 # better optimizations
+debug = true # symbols are nice and they don't increase the size on Flash
+lto = true # better optimizations
+opt-level = 'z' # Optimize for size.
