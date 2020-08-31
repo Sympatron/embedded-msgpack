@@ -1,3 +1,5 @@
+mod serde;
+
 use crate::marker::Marker;
 use crate::Error;
 
@@ -95,8 +97,10 @@ pub fn serialize_i8(value: i8, buf: &mut [u8]) -> Result<usize, Error> {
 }
 pub fn serialize_i16(value: i16, buf: &mut [u8]) -> Result<usize, Error> {
     // if value <= i8::max_value() as i16 && value >= i8::min_value() as i16 {
-    if let Some(value) = i8::from_i16(value) {
-        return serialize_i8(value as i8, buf);
+    if let Some(value) = u16::from_i16(value) {
+        return serialize_u16(value, buf);
+    } else if let Some(value) = i8::from_i16(value) {
+        return serialize_i8(value, buf);
     } else {
         if buf.len() < 3 {
             return Err(Error::EndOfBuffer);
@@ -108,8 +112,10 @@ pub fn serialize_i16(value: i16, buf: &mut [u8]) -> Result<usize, Error> {
 }
 pub fn serialize_i32(value: i32, buf: &mut [u8]) -> Result<usize, Error> {
     // if value <= i16::max_value() as i32 && value >= i16::min_value() as i32 {
-    if let Some(value) = i16::from_i32(value) {
-        return serialize_i16(value as i16, buf);
+    if let Some(value) = u32::from_i32(value) {
+        return serialize_u32(value, buf);
+    } else if let Some(value) = i16::from_i32(value) {
+        return serialize_i16(value, buf);
     } else {
         if buf.len() < 5 {
             return Err(Error::EndOfBuffer);
@@ -121,6 +127,10 @@ pub fn serialize_i32(value: i32, buf: &mut [u8]) -> Result<usize, Error> {
 }
 #[cfg(feature = "i64")]
 pub fn serialize_i64(value: i64, buf: &mut [u8]) -> Result<usize, Error> {
+    #[cfg(feature = "u64")]
+    if let Some(value) = u64::from_i64(value) {
+        return serialize_u64(value, buf);
+    }
     if let Some(value) = i32::from_i64(value) {
         return serialize_i32(value, buf);
     } else {
@@ -131,6 +141,22 @@ pub fn serialize_i64(value: i64, buf: &mut [u8]) -> Result<usize, Error> {
         BigEndian::write_i64(&mut buf[1..], value);
         return Ok(9);
     }
+}
+pub fn serialize_f32(value: f32, buf: &mut [u8]) -> Result<usize, Error> {
+    if buf.len() < 5 {
+        return Err(Error::EndOfBuffer);
+    }
+    buf[0] = Marker::F32.to_u8();
+    BigEndian::write_f32(&mut buf[1..], value);
+    return Ok(5);
+}
+pub fn serialize_f64(value: f64, buf: &mut [u8]) -> Result<usize, Error> {
+    if buf.len() < 9 {
+        return Err(Error::EndOfBuffer);
+    }
+    buf[0] = Marker::F64.to_u8();
+    BigEndian::write_f64(&mut buf[1..], value);
+    return Ok(9);
 }
 
 impl Serializable for u8 {
@@ -176,6 +202,17 @@ impl Serializable for i64 {
     }
 }
 
+impl Serializable for f32 {
+    fn write_into(&self, buf: &mut [u8]) -> Result<usize, Error> {
+        serialize_f32(*self, buf)
+    }
+}
+impl Serializable for f64 {
+    fn write_into(&self, buf: &mut [u8]) -> Result<usize, Error> {
+        serialize_f64(*self, buf)
+    }
+}
+
 impl Serializable for bool {
     fn write_into(&self, buf: &mut [u8]) -> Result<usize, Error> {
         if buf.len() < 1 {
@@ -204,6 +241,11 @@ where
             buf[0] = Marker::Null.to_u8();
             Ok(1)
         }
+    }
+}
+impl Serializable for () {
+    fn write_into(&self, _buf: &mut [u8]) -> Result<usize, Error> {
+        Ok(0)
     }
 }
 
