@@ -4,13 +4,13 @@ version = "0.1.0"
 authors = ["Karsten Große"]
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-num-traits = { version = "*", default-features = false }
+num-traits = { version = "~0.2", default-features = false }
 byteorder = { version = "~1", default-features = false }
 zerocopy = { version = "~0.3", default-features = false }
+serde = { version = "~1", default-features = false, optional = true, features = ["derive"] }
 managed = { version = "~0.8", default-features = false }
+
 panic-halt = { version = "*", optional = true }
 cortex-m = { version = "*", optional = true }
 cortex-m-rt = { version = "*", optional = true }
@@ -26,10 +26,11 @@ default = [
     "u64",
     "i64",
     "timestamp",
+    "serde",
     "ext8", # "ext16",    # "ext32",
 ]
-std = ["managed/std", "byteorder/std", "num-traits/std"]
-alloc = ["alloc-cortex-m", "managed/alloc"]
+std = ["managed/std", "byteorder/std", "num-traits/std", "serde/std"]
+alloc = ["alloc-cortex-m", "managed/alloc", "serde/alloc"]
 u64 = []
 i64 = []
 bin32 = []
