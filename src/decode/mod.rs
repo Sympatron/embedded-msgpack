@@ -1,3 +1,6 @@
+#[cfg(feature = "serde")]
+mod serde;
+
 use crate::marker::Marker;
 
 use ::byteorder::{BigEndian, ByteOrder};
