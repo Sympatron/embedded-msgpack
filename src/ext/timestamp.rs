@@ -4,7 +4,7 @@ use core::{
     marker::PhantomData,
 };
 
-use crate::{encode::Serializable, Error, Ext};
+use crate::{encode::Error, encode::Serializable, Ext};
 
 const EXT_TIMESTAMP: i8 = -1;
 
@@ -63,7 +63,7 @@ impl Timestamp {
 }
 
 impl Serializable for Timestamp {
-    fn write_into(&self, buf: &mut [u8]) -> Result<usize, Error> {
+    fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> {
         if self.seconds >> 34 == 0 {
             let x = ((self.nanoseconds as u64) << 34) | self.seconds as u64;
             if x & 0xffffffff00000000u64 == 0 {

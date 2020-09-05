@@ -1,9 +1,9 @@
 #[cfg(feature = "timestamp")]
 pub mod timestamp;
 
-use crate::{encode::Serializable, marker::Marker, Error};
-// use byteorder::{BigEndian, ByteOrder};
-// use num_traits::bounds::Bounded;
+use crate::encode::{Error, Serializable};
+#[allow(unused_imports)]
+use crate::marker::Marker;
 
 pub struct Ext<'a> {
     typ: i8,
@@ -159,7 +159,7 @@ pub fn serialize_ext<'a>(value: &Ext<'a>, buf: &mut [u8]) -> Result<usize, Error
 
 #[cfg(feature = "ext")]
 impl<'a> Serializable for &Ext<'a> {
-    fn write_into(&self, buf: &mut [u8]) -> Result<usize, Error> {
+    fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> {
         serialize_ext(self, buf)
     }
 }
