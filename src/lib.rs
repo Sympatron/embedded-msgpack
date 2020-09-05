@@ -2,14 +2,10 @@
 
 pub mod decode;
 pub mod encode;
+#[cfg(feature = "ext")]
 pub mod ext;
 mod marker;
 
+#[cfg(feature = "ext")]
 pub use ext::*;
-
-#[derive(Debug)]
-pub enum Error {
-    OutOfBounds,
-    InvalidType,
-    EndOfBuffer,
-}
+pub use serde_bytes::Bytes;
