@@ -10,8 +10,8 @@ mod map;
 mod seq;
 mod struct_;
 
+use super::Error;
 use crate::encode::Serializable;
-use crate::Error;
 
 pub(crate) struct Serializer<'a> {
     buf: &'a mut [u8],
@@ -19,24 +19,32 @@ pub(crate) struct Serializer<'a> {
 }
 
 impl<'a> Serializer<'a> {
-    // fn new(buf: &'a mut [u8]) -> Self {
-    //     Serializer { buf: buf, pos: 0 }
-    // }
+    fn new(buf: &'a mut [u8]) -> Self {
+        Serializer { buf: buf, pos: 0 }
+    }
     fn append<S: Serializable>(&mut self, value: S) -> Result<(), Error> {
-        self.pos += value.write_into(&mut self.buf[self.pos..])?;
+        self.pos += value.write_into_slice(&mut self.buf[self.pos..])?;
+        Ok(())
+    }
+    fn _extend(&mut self, data: &[u8]) -> Result<(), Error> {
+        if data.len() + self.pos >= self.buf.len() {
+            return Err(Error::EndOfBuffer);
+        }
+        self.buf[self.pos..].copy_from_slice(data);
+        self.pos += data.len();
         Ok(())
     }
 }
 
-impl<'a> ser::Serializer for &'a mut Serializer<'a> {
+impl<'a, 'b> ser::Serializer for &'a mut Serializer<'b> {
     type Ok = ();
     type Error = Error;
-    type SerializeSeq = SerializeSeq<'a>;
-    type SerializeTuple = SerializeSeq<'a>;
+    type SerializeSeq = SerializeSeq<'a, 'b>;
+    type SerializeTuple = SerializeSeq<'a, 'b>;
     type SerializeTupleStruct = Unreachable;
     type SerializeTupleVariant = Unreachable;
-    type SerializeMap = SerializeMap<'a, 'a>;
-    type SerializeStruct = SerializeStruct<'a>;
+    type SerializeMap = SerializeMap<'a, 'b>;
+    type SerializeStruct = SerializeStruct<'a, 'b>;
     type SerializeStructVariant = Unreachable;
 
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
@@ -160,7 +168,6 @@ impl<'a> ser::Serializer for &'a mut Serializer<'a> {
     }
 
     fn serialize_tuple(self, len: usize) -> Result<Self::SerializeTuple, Self::Error> {
-        self.pos += crate::encode::serialize_array_start(len, &mut self.buf[self.pos..])?;
         self.serialize_seq(Some(len))
     }
 
@@ -182,20 +189,19 @@ impl<'a> ser::Serializer for &'a mut Serializer<'a> {
         unreachable!()
     }
 
-    fn serialize_map(self, _len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
-        todo!()
-        // self.buf.push(b'{')?;
-        // Ok(SerializeMap::new(self))
+    fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
+        self.pos +=
+            super::serialize_map_start(len.ok_or(Error::InvalidType)?, &mut self.buf[self.pos..])?;
+        Ok(SerializeMap::new(self))
     }
 
     fn serialize_struct(
         self,
         _name: &'static str,
-        _len: usize,
+        len: usize,
     ) -> Result<Self::SerializeStruct, Self::Error> {
-        todo!()
-        // self.buf.push(b'{')?;
-        // Ok(SerializeStruct::new(self))
+        self.pos += super::serialize_map_start(len, &mut self.buf[self.pos..])?;
+        Ok(SerializeStruct::new(self))
     }
 
     fn serialize_struct_variant(
@@ -227,16 +233,15 @@ impl<'a> ser::Serializer for &'a mut Serializer<'a> {
 //     Ok(unsafe { String::from_utf8_unchecked(ser.buf) })
 // }
 
-// /// Serializes the given data structure as a JSON byte vector
-// pub fn to_vec<B, T>(value: &T) -> Result<Vec<u8, B>>
-// where
-//     B: heapless::ArrayLength<u8>,
-//     T: ser::Serialize + ?Sized,
-// {
-//     let mut ser = Serializer::new();
-//     value.serialize(&mut ser)?;
-//     Ok(ser.buf)
-// }
+/// Serializes the given data structure as a JSON byte vector
+pub fn to_array<'a, T>(value: &T, buf: &'a mut [u8]) -> Result<usize, Error>
+where
+    T: ser::Serialize + ?Sized,
+{
+    let mut ser = Serializer::new(buf);
+    value.serialize(&mut ser)?;
+    Ok(ser.pos)
+}
 
 impl ser::Error for Error {
     fn custom<T>(_msg: T) -> Self
