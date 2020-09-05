@@ -1,21 +1,19 @@
 use serde::ser;
 
-// use heapless::ArrayLength;
-
+use super::Error;
 use super::Serializer;
-use crate::Error;
 
-pub struct SerializeSeq<'a> {
-    ser: &'a mut Serializer<'a>,
+pub struct SerializeSeq<'a, 'b> {
+    ser: &'a mut Serializer<'b>,
 }
 
-impl<'a> SerializeSeq<'a> {
-    pub(crate) fn new(ser: &'a mut Serializer<'a>) -> Self {
+impl<'a, 'b> SerializeSeq<'a, 'b> {
+    pub(crate) fn new(ser: &'a mut Serializer<'b>) -> Self {
         SerializeSeq { ser }
     }
 }
 
-impl<'a> ser::SerializeSeq for SerializeSeq<'a> {
+impl<'a, 'b> ser::SerializeSeq for SerializeSeq<'a, 'b> {
     type Ok = ();
     type Error = Error;
 
@@ -23,7 +21,7 @@ impl<'a> ser::SerializeSeq for SerializeSeq<'a> {
     where
         T: ser::Serialize,
     {
-        // value.serialize(*self.ser)?;
+        value.serialize(&mut *self.ser)?;
         Ok(())
     }
 
@@ -32,7 +30,7 @@ impl<'a> ser::SerializeSeq for SerializeSeq<'a> {
     }
 }
 
-impl<'a> ser::SerializeTuple for SerializeSeq<'a> {
+impl<'a, 'b> ser::SerializeTuple for SerializeSeq<'a, 'b> {
     type Ok = ();
     type Error = Error;
 

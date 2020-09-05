@@ -4,17 +4,17 @@ use serde::ser;
 
 use super::{Error, Serializer};
 
-pub struct SerializeMap<'ser, 'a> {
-    ser: &'a mut Serializer<'ser>,
+pub struct SerializeMap<'a, 'b> {
+    ser: &'a mut Serializer<'b>,
 }
 
-impl<'ser, 'a> SerializeMap<'ser, 'a> {
-    pub(crate) fn new(ser: &'a mut Serializer<'ser>) -> Self {
+impl<'a, 'b> SerializeMap<'a, 'b> {
+    pub(crate) fn new(ser: &'a mut Serializer<'b>) -> Self {
         SerializeMap { ser }
     }
 }
 
-impl<'ser, 'a> ser::SerializeMap for SerializeMap<'ser, 'a> {
+impl<'a, 'b> ser::SerializeMap for SerializeMap<'a, 'b> {
     type Ok = ();
     type Error = Error;
 
@@ -26,7 +26,7 @@ impl<'ser, 'a> ser::SerializeMap for SerializeMap<'ser, 'a> {
     where
         T: ser::Serialize,
     {
-        // key.serialize(&mut *self.ser)?;
+        key.serialize(&mut *self.ser)?;
         Ok(())
     }
 
@@ -34,7 +34,7 @@ impl<'ser, 'a> ser::SerializeMap for SerializeMap<'ser, 'a> {
     where
         T: ser::Serialize,
     {
-        // value.serialize(&mut *self.ser)?;
+        value.serialize(&mut *self.ser)?;
         Ok(())
     }
 }
