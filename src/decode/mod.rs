@@ -1,12 +1,11 @@
-#[cfg(feature = "serde")]
-mod serde;
+#[cfg(feature = "serde")] mod serde;
 
 use crate::marker::Marker;
 
-use ::byteorder::{BigEndian, ByteOrder};
-use ::zerocopy::ByteSlice;
+use byteorder::{BigEndian, ByteOrder};
+use zerocopy::ByteSlice;
 // use ::zerocopy::byteorder::{U16, U32, U64, I16, I32, I64};
-use ::num_traits::cast::FromPrimitive;
+use num_traits::cast::FromPrimitive;
 // use core::convert::TryInto;
 
 #[derive(Debug)]
@@ -14,6 +13,9 @@ pub enum Error {
     EndOfBuffer,
     OutOfBounds,
     InvalidType,
+    CustomError,
+    #[cfg(feature = "custom-error-messages")]
+    CustomErrorWithMessage(heapless::String),
 }
 
 #[cfg(feature = "serde")]
@@ -51,29 +53,29 @@ pub fn read_sint<B: ByteSlice, T: FromPrimitive>(buf: B) -> Result<(T, usize), E
 }
 
 #[inline(always)]
-pub fn read_u8<B: ByteSlice>(buf: B) -> Result<(u8, usize), Error> {
-    read_int(buf)
-}
+pub fn read_u8<B: ByteSlice>(buf: B) -> Result<(u8, usize), Error> { read_int(buf) }
 #[inline(always)]
-pub fn read_u16<B: ByteSlice>(buf: B) -> Result<(u16, usize), Error> {
-    read_int(buf)
-}
+pub fn read_u16<B: ByteSlice>(buf: B) -> Result<(u16, usize), Error> { read_int(buf) }
 #[inline(always)]
-pub fn read_u32<B: ByteSlice>(buf: B) -> Result<(u32, usize), Error> {
-    read_int(buf)
-}
+pub fn read_u32<B: ByteSlice>(buf: B) -> Result<(u32, usize), Error> { read_int(buf) }
 
 #[inline(always)]
-pub fn read_i8<B: ByteSlice>(buf: B) -> Result<(i8, usize), Error> {
-    read_sint(buf)
-}
+pub fn read_i8<B: ByteSlice>(buf: B) -> Result<(i8, usize), Error> { read_sint(buf) }
 #[inline(always)]
-pub fn read_i16<B: ByteSlice>(buf: B) -> Result<(i16, usize), Error> {
-    read_sint(buf)
-}
+pub fn read_i16<B: ByteSlice>(buf: B) -> Result<(i16, usize), Error> { read_sint(buf) }
 #[inline(always)]
-pub fn read_i32<B: ByteSlice>(buf: B) -> Result<(i32, usize), Error> {
-    read_sint(buf)
+pub fn read_i32<B: ByteSlice>(buf: B) -> Result<(i32, usize), Error> { read_sint(buf) }
+
+pub fn read_bool<B: ByteSlice>(buf: B) -> Result<(bool, usize), Error> {
+    if buf.len() == 0 {
+        return Err(Error::EndOfBuffer);
+    }
+
+    match Marker::from(buf[0]) {
+        Marker::True => Ok((true, 1)),
+        Marker::False => Ok((false, 1)),
+        _ => Err(Error::InvalidType),
+    }
 }
 
 pub fn read_u64<B: ByteSlice>(buf: B) -> Result<(u64, usize), Error> {
@@ -222,7 +224,7 @@ pub fn read_f64<B: ByteSlice>(buf: B) -> Result<(f64, usize), Error> {
     }
 }
 
-pub fn read_bin<'a, B: ByteSlice>(buf: B) -> Result<(B, usize), Error> {
+pub fn read_bin<B: ByteSlice>(buf: B) -> Result<(B, usize), Error> {
     if buf.len() == 0 {
         return Err(Error::EndOfBuffer);
     }
@@ -288,8 +290,8 @@ pub fn read_bin<'a, B: ByteSlice>(buf: B) -> Result<(B, usize), Error> {
     }
 }
 
-pub fn read_str<'a>(buf: &'a [u8]) -> Result<(&'a str, usize), Error> {
-    if buf.len() == 0 {
+pub fn read_str(buf: &[u8]) -> Result<(&str, usize), Error> {
+    if buf.is_empty() {
         return Err(Error::EndOfBuffer);
     }
 
@@ -359,6 +361,7 @@ pub fn read_array_len<B: ByteSlice>(buf: B) -> Result<(usize, usize), Error> {
         return Err(Error::EndOfBuffer);
     }
 
+    // let (&marker, buf) = buf.split_first().ok_or(Error::EndOfBuffer)?;
     let marker = Marker::from(buf[0]);
     let (header_len, len) = match marker {
         Marker::FixArray(len) => {

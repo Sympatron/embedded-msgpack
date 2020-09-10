@@ -4,7 +4,10 @@ use core::{
     marker::PhantomData,
 };
 
-use crate::{encode::Error, encode::Serializable, Ext};
+use crate::{
+    encode::{Error, Serializable},
+    Ext,
+};
 
 const EXT_TIMESTAMP: i8 = -1;
 
@@ -26,7 +29,7 @@ impl Timestamp {
             prevent_new: PhantomData::default(),
         })
     }
-    pub fn into_ext<'a>(&self, buf: &'a mut [u8]) -> Result<Ext<'a>, Error> {
+    pub fn to_ext<'a>(&self, buf: &'a mut [u8]) -> Result<Ext<'a>, Error> {
         if self.seconds >> 34 == 0 {
             let x = ((self.nanoseconds as u64) << 34) | self.seconds as u64;
             if x & 0xffffffff00000000u64 == 0 {
@@ -144,7 +147,7 @@ impl<'a> TryFrom<Ext<'a>> for TimestampRef<'a> {
     #[inline]
     fn try_from(ext: Ext<'a>) -> Result<Self, Self::Error> {
         if ext.typ == EXT_TIMESTAMP {
-            Ok(TimestampRef { ext: ext })
+            Ok(TimestampRef { ext })
         } else {
             Err(())
         }

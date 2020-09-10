@@ -1,12 +1,10 @@
-#[cfg(feature = "serde")]
-pub mod serde;
+#[cfg(feature = "serde")] pub mod serde;
 
 use crate::marker::Marker;
 
-use ::byteorder::{BigEndian, ByteOrder};
-use ::core::convert::From;
-use ::core::ops::Deref;
-use ::num_traits::cast::FromPrimitive;
+use byteorder::{BigEndian, ByteOrder};
+use core::{convert::From, ops::Deref};
+use num_traits::cast::FromPrimitive;
 
 #[derive(Debug)]
 pub enum Error {
@@ -34,59 +32,59 @@ pub trait Serializable {
 
 pub fn serialize_u8(value: u8, buf: &mut [u8]) -> Result<usize, Error> {
     if value < 0x80 {
-        if buf.len() < 1 {
+        if buf.is_empty() {
             return Err(Error::EndOfBuffer);
         }
         buf[0] = value;
-        return Ok(1);
+        Ok(1)
     } else {
         if buf.len() < 2 {
             return Err(Error::EndOfBuffer);
         }
         buf[0] = Marker::U8.to_u8();
         buf[1] = value;
-        return Ok(2);
+        Ok(2)
     }
 }
 pub fn serialize_u16(value: u16, buf: &mut [u8]) -> Result<usize, Error> {
     if value <= u8::max_value() as u16 {
-        return serialize_u8(value as u8, buf);
+        serialize_u8(value as u8, buf)
     } else {
         if buf.len() < 3 {
             return Err(Error::EndOfBuffer);
         }
         buf[0] = Marker::U16.to_u8();
         BigEndian::write_u16(&mut buf[1..], value);
-        return Ok(3);
+        Ok(3)
     }
 }
 pub fn serialize_u32(value: u32, buf: &mut [u8]) -> Result<usize, Error> {
     if value <= u16::max_value() as u32 {
-        return serialize_u16(value as u16, buf);
+        serialize_u16(value as u16, buf)
     } else {
         if buf.len() < 5 {
             return Err(Error::EndOfBuffer);
         }
         buf[0] = Marker::U32.to_u8();
         BigEndian::write_u32(&mut buf[1..], value);
-        return Ok(5);
+        Ok(5)
     }
 }
 #[cfg(feature = "u64")]
 pub fn serialize_u64(value: u64, buf: &mut [u8]) -> Result<usize, Error> {
     if value <= u32::max_value() as u64 {
-        return serialize_u32(value as u32, buf);
+        serialize_u32(value as u32, buf)
     } else {
         if buf.len() < 9 {
             return Err(Error::EndOfBuffer);
         }
         buf[0] = Marker::U64.to_u8();
         BigEndian::write_u64(&mut buf[1..], value);
-        return Ok(9);
+        Ok(9)
     }
 }
 pub fn serialize_i8(value: i8, buf: &mut [u8]) -> Result<usize, Error> {
-    if buf.len() < 1 {
+    if buf.is_empty() {
         return Err(Error::EndOfBuffer);
     }
     match value {
@@ -118,31 +116,31 @@ pub fn serialize_i8(value: i8, buf: &mut [u8]) -> Result<usize, Error> {
 pub fn serialize_i16(value: i16, buf: &mut [u8]) -> Result<usize, Error> {
     // if value <= i8::max_value() as i16 && value >= i8::min_value() as i16 {
     if let Some(value) = u16::from_i16(value) {
-        return serialize_u16(value, buf);
+        serialize_u16(value, buf)
     } else if let Some(value) = i8::from_i16(value) {
-        return serialize_i8(value, buf);
+        serialize_i8(value, buf)
     } else {
         if buf.len() < 3 {
             return Err(Error::EndOfBuffer);
         }
         buf[0] = Marker::I16.to_u8();
         BigEndian::write_i16(&mut buf[1..], value);
-        return Ok(3);
+        Ok(3)
     }
 }
 pub fn serialize_i32(value: i32, buf: &mut [u8]) -> Result<usize, Error> {
     // if value <= i16::max_value() as i32 && value >= i16::min_value() as i32 {
     if let Some(value) = u32::from_i32(value) {
-        return serialize_u32(value, buf);
+        serialize_u32(value, buf)
     } else if let Some(value) = i16::from_i32(value) {
-        return serialize_i16(value, buf);
+        serialize_i16(value, buf)
     } else {
         if buf.len() < 5 {
             return Err(Error::EndOfBuffer);
         }
         buf[0] = Marker::I32.to_u8();
         BigEndian::write_i32(&mut buf[1..], value);
-        return Ok(5);
+        Ok(5)
     }
 }
 #[cfg(feature = "i64")]
@@ -152,14 +150,14 @@ pub fn serialize_i64(value: i64, buf: &mut [u8]) -> Result<usize, Error> {
         return serialize_u64(value, buf);
     }
     if let Some(value) = i32::from_i64(value) {
-        return serialize_i32(value, buf);
+        serialize_i32(value, buf)
     } else {
         if buf.len() < 9 {
             return Err(Error::EndOfBuffer);
         }
         buf[0] = Marker::I64.to_u8();
         BigEndian::write_i64(&mut buf[1..], value);
-        return Ok(9);
+        Ok(9)
     }
 }
 pub fn serialize_f32(value: f32, buf: &mut [u8]) -> Result<usize, Error> {
@@ -168,7 +166,7 @@ pub fn serialize_f32(value: f32, buf: &mut [u8]) -> Result<usize, Error> {
     }
     buf[0] = Marker::F32.to_u8();
     BigEndian::write_f32(&mut buf[1..], value);
-    return Ok(5);
+    Ok(5)
 }
 pub fn serialize_f64(value: f64, buf: &mut [u8]) -> Result<usize, Error> {
     if buf.len() < 9 {
@@ -176,86 +174,61 @@ pub fn serialize_f64(value: f64, buf: &mut [u8]) -> Result<usize, Error> {
     }
     buf[0] = Marker::F64.to_u8();
     BigEndian::write_f64(&mut buf[1..], value);
-    return Ok(9);
+    Ok(9)
 }
 
 impl Serializable for u8 {
-    fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> {
-        serialize_u8(*self, buf)
-    }
+    fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_u8(*self, buf) }
 }
 impl Serializable for u16 {
-    fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> {
-        serialize_u16(*self, buf)
-    }
+    fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_u16(*self, buf) }
 }
 impl Serializable for u32 {
-    fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> {
-        serialize_u32(*self, buf)
-    }
+    fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_u32(*self, buf) }
 }
 #[cfg(feature = "u64")]
 impl Serializable for u64 {
-    fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> {
-        serialize_u64(*self, buf)
-    }
+    fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_u64(*self, buf) }
 }
 impl Serializable for i8 {
-    fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> {
-        serialize_i8(*self, buf)
-    }
+    fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_i8(*self, buf) }
 }
 impl Serializable for i16 {
-    fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> {
-        serialize_i16(*self, buf)
-    }
+    fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_i16(*self, buf) }
 }
 impl Serializable for i32 {
-    fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> {
-        serialize_i32(*self, buf)
-    }
+    fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_i32(*self, buf) }
 }
 #[cfg(feature = "i64")]
 impl Serializable for i64 {
-    fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> {
-        serialize_i64(*self, buf)
-    }
+    fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_i64(*self, buf) }
 }
 
 impl Serializable for f32 {
-    fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> {
-        serialize_f32(*self, buf)
-    }
+    fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_f32(*self, buf) }
 }
 impl Serializable for f64 {
-    fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> {
-        serialize_f64(*self, buf)
-    }
+    fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_f64(*self, buf) }
 }
 
 impl Serializable for bool {
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> {
-        if buf.len() < 1 {
+        if buf.is_empty() {
             return Err(Error::EndOfBuffer);
         }
-        buf[0] = if *self {
-            Marker::True.to_u8()
-        } else {
-            Marker::False.to_u8()
-        };
+        buf[0] = if *self { Marker::True.to_u8() } else { Marker::False.to_u8() };
         Ok(1)
     }
 }
 
 impl<T> Serializable for Option<T>
-where
-    T: Serializable,
+where T: Serializable
 {
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> {
         if let Some(value) = self {
             Serializable::write_into_slice(value, buf)
         } else {
-            if buf.len() < 1 {
+            if buf.is_empty() {
                 return Err(Error::EndOfBuffer);
             }
             buf[0] = Marker::Null.to_u8();
@@ -264,28 +237,20 @@ where
     }
 }
 impl Serializable for () {
-    fn write_into_slice(&self, _buf: &mut [u8]) -> Result<usize, Error> {
-        Ok(0)
-    }
+    fn write_into_slice(&self, _buf: &mut [u8]) -> Result<usize, Error> { Ok(0) }
 }
 
 #[repr(transparent)]
 pub struct Binary<'a>(&'a [u8]);
 impl<'a> Binary<'a> {
-    pub fn new(slice: &'a [u8]) -> Self {
-        Binary(slice)
-    }
+    pub fn new(slice: &'a [u8]) -> Self { Binary(slice) }
 }
 impl<'a> Deref for Binary<'a> {
     type Target = &'a [u8];
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
+    fn deref(&self) -> &Self::Target { &self.0 }
 }
 impl<'a> From<&'a [u8]> for Binary<'a> {
-    fn from(slice: &'a [u8]) -> Self {
-        Binary(slice)
-    }
+    fn from(slice: &'a [u8]) -> Self { Binary(slice) }
 }
 
 impl<'a> Serializable for Binary<'a> {
@@ -403,8 +368,7 @@ where
 }
 
 impl<T> Serializable for &[T]
-where
-    T: Serializable,
+where T: Serializable
 {
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> {
         // serialize_sequence(self, SeuqenceType::Array, buf)
@@ -429,11 +393,7 @@ impl SeuqenceType {
     }
 }
 
-pub fn serialize_sequence<T: Serializable>(
-    seq: &[T],
-    typ: SeuqenceType,
-    buf: &mut [u8],
-) -> Result<usize, Error> {
+pub fn serialize_sequence<T: Serializable>(seq: &[T], typ: SeuqenceType, buf: &mut [u8]) -> Result<usize, Error> {
     let mut index = typ.serialize_start(seq.len(), buf)?;
     for i in seq.iter() {
         index += Serializable::write_into_slice(i, &mut buf[index..])?;
@@ -488,11 +448,7 @@ pub fn serialize_map_start(n: usize, buf: &mut [u8]) -> Result<usize, Error> {
         unimplemented!()
     }
 }
-pub fn serialize_map_kay_value<K: Serializable, V: Serializable>(
-    key: &K,
-    value: &V,
-    buf: &mut [u8],
-) -> Result<usize, Error> {
+pub fn serialize_map_kay_value<K: Serializable, V: Serializable>(key: &K, value: &V, buf: &mut [u8]) -> Result<usize, Error> {
     let mut index = 0;
     index += Serializable::write_into_slice(key, &mut buf[index..])?;
     index += Serializable::write_into_slice(value, &mut buf[index..])?;

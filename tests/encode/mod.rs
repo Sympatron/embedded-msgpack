@@ -2,8 +2,8 @@ use embedded_msgpack::encode::{Binary, Serializable};
 
 fn print_slice(data: &[u8]) {
     print!("[");
-    for i in 0..data.len() {
-        print!("{}0x{:02x}", if i > 0 { ", " } else { "" }, &data[i]);
+    for (i, v) in data.iter().enumerate() {
+        print!("{}0x{:02x}", if i > 0 { ", " } else { "" }, v);
     }
     println!("]");
 }
@@ -301,7 +301,7 @@ fn encode_bin() {
 #[cfg(feature = "serde")]
 #[test]
 fn encode_struct() {
-    use ::serde::Serialize;
+    use serde::Serialize;
     #[derive(Serialize)]
     struct Test {
         a: Option<i32>,
@@ -319,7 +319,7 @@ fn encode_struct() {
 #[cfg(feature = "serde")]
 #[test]
 fn encode_complex_struct() {
-    use ::serde::Serialize;
+    use serde::Serialize;
     #[derive(Serialize)]
     struct Test {
         a: Option<i32>,

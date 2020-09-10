@@ -147,14 +147,10 @@ impl Marker {
 
 impl From<u8> for Marker {
     #[inline(always)]
-    fn from(val: u8) -> Marker {
-        Marker::from_u8(val)
-    }
+    fn from(val: u8) -> Marker { Marker::from_u8(val) }
 }
 
 impl Into<u8> for Marker {
     #[inline(always)]
-    fn into(self) -> u8 {
-        self.to_u8()
-    }
+    fn into(self) -> u8 { self.to_u8() }
 }

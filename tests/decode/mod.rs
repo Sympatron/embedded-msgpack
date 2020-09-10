@@ -110,6 +110,7 @@ fn decode_bin32() {
 fn decode_enum() {
     use serde::Deserialize;
     use serde_repr::Deserialize_repr;
+    #[allow(clippy::enum_variant_names)]
     #[derive(Deserialize, PartialEq, Eq, Debug)]
     enum Test {
         UnitVariant,

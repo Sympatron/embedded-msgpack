@@ -1,5 +1,4 @@
-#[cfg(feature = "timestamp")]
-pub mod timestamp;
+#[cfg(feature = "timestamp")] pub mod timestamp;
 
 use crate::encode::{Error, Serializable};
 #[allow(unused_imports)]
@@ -11,17 +10,11 @@ pub struct Ext<'a> {
 }
 
 impl<'a> Ext<'a> {
-    pub fn new(typ: i8, data: &'a [u8]) -> Self {
-        Ext { typ, data }
-    }
+    pub fn new(typ: i8, data: &'a [u8]) -> Self { Ext { typ, data } }
     #[inline(always)]
-    pub fn get_type(&self) -> i8 {
-        self.typ
-    }
+    pub fn get_type(&self) -> i8 { self.typ }
     #[inline(always)]
-    pub fn get_data(&self) -> &'a [u8] {
-        self.data
-    }
+    pub fn get_data(&self) -> &'a [u8] { self.data }
 }
 
 pub fn serialize_ext<'a>(value: &Ext<'a>, buf: &mut [u8]) -> Result<usize, Error> {
@@ -159,7 +152,5 @@ pub fn serialize_ext<'a>(value: &Ext<'a>, buf: &mut [u8]) -> Result<usize, Error
 
 #[cfg(feature = "ext")]
 impl<'a> Serializable for &Ext<'a> {
-    fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> {
-        serialize_ext(self, buf)
-    }
+    fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_ext(self, buf) }
 }
