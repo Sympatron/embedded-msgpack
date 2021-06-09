@@ -1,36 +1,35 @@
 [package]
 name = "embedded-msgpack"
+description = "MessagePack serialization implementation for Rust optimized for embedded/no_std environments"
 version = "0.1.0"
+repository = "https://github.com/Sympatron/embedded-msgpack"
+documentation = "https://docs.rs/embedded-msgpack"
+readme = "./README.md"
 license = "MIT OR Apache-2.0"
 authors = ["Karsten Große"]
+keywords = ["no_std", "msgpack", "messagepack", "serde"]
+categories = ["no-std", "embedded"]
 edition = "2018"
 
 [dependencies]
-num-traits = { version = "~0.2", default-features = false }
-byteorder = { version = "~1", default-features = false }
-zerocopy = { version = "~0.3", default-features = false }
-serde = { version = "~1", default-features = false, optional = true, features = ["derive"] }
-serde_bytes = { version = "*", default-features = false, optional = true }
-serde_repr = { version = "*", default-features = false, optional = true }
-paste = "*"
+num-traits = { version = "0.2", default-features = false }
+byteorder = { version = "1", default-features = false }
+zerocopy = { version = "0.5", default-features = false }
+serde = { version = "1.0", default-features = false, optional = true, features = ["derive"] }
+serde_bytes = { version = "0.11", default-features = false, optional = true }
+paste = "1.0"
 
-panic-halt = { version = "*", optional = true }
-cortex-m = { version = "*", optional = true }
-cortex-m-rt = { version = "*", optional = true }
-rand = { version = "*", optional = true, default-features = false }
-alloc-cortex-m = { version = "*", optional = true }
+[dev-dependencies]
+serde_repr = { version = "0.1", default-features = false }
 
 [features]
 default = [
-    "panic-halt",
-    "cortex-m",
-    "cortex-m-rt",
-    "rand",
     "u64",
     "i64",
     "timestamp",
     "serde",
-    "ext8", # "ext16",    # "ext32",
+    "serde_bytes",
+    "ext8",
 ]
 std = ["byteorder/std", "num-traits/std", "serde_bytes/std", "serde/std"]
 alloc = ["serde/alloc", "serde_bytes/alloc"]
@@ -64,10 +63,3 @@ compliant = [
     "timestamp",
     "timestamp96",
 ]
-
-
-[profile.release]
-# codegen-units = 1 # better optimizations
-debug = true # symbols are nice and they don't increase the size on Flash
-lto = true # better optimizations
-opt-level = 'z' # Optimize for size.
