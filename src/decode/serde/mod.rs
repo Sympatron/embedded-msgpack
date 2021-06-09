@@ -15,8 +15,6 @@ type Result<T> = core::result::Result<T, Error>;
 
 #[cfg(debug_assertions)]
 fn print_debug<T>(prefix: &str, function_name: &str, de: &Deserializer) {
-    extern crate std;
-    use std::println;
     println!(
         "{}{}<{}> ({:?})",
         prefix,
@@ -27,8 +25,6 @@ fn print_debug<T>(prefix: &str, function_name: &str, de: &Deserializer) {
 }
 #[cfg(debug_assertions)]
 fn print_debug_value<T, V: core::fmt::Debug>(function_name: &str, de: &Deserializer, value: &V) {
-    extern crate std;
-    use std::println;
     println!(
         "{}<{}> => {:?}   ({:?})",
         function_name,
@@ -236,6 +232,7 @@ impl<'a, 'de> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     }
 }
 
+impl ::serde::de::StdError for Error {}
 impl de::Error for Error {
     #[cfg_attr(not(feature = "custom-error-messages"), allow(unused_variables))]
     fn custom<T>(msg: T) -> Self
