@@ -380,10 +380,11 @@ pub fn read_bin<B: ByteSlice>(buf: B) -> Result<(B, usize), Error> {
             if buf.len() < header_len {
                 return Err(Error::EndOfBuffer);
             }
-            let len = BigEndian::read_u16(&buf[1..header_len]) as usize;
-            if buf.len() >= header_len + len {
-                let (_head, rest) = buf.split_at(header_len);
-                let (bin, _rest) = rest.split_at(len);
+            let (_, buf) = buf.split_at(1);
+            let (len, buf) = read_raw_u16(buf)?; //BigEndian::read_u16(&buf[1..header_len]) as usize;
+            let len = len as usize;
+            if buf.len() >= len {
+                let (bin, _rest) = buf.split_at(len);
                 Ok((bin, header_len + len))
             } else {
                 Err(Error::EndOfBuffer)
@@ -397,8 +398,8 @@ pub fn read_bin<B: ByteSlice>(buf: B) -> Result<(B, usize), Error> {
             }
             let len = BigEndian::read_u32(&buf[1..header_len]) as usize;
             if buf.len() >= header_len + len {
-                let (head, rest) = buf.split_at(header_len);
-                let (bin, rest) = rest.split_at(len);
+                let (_head, rest) = buf.split_at(header_len);
+                let (bin, _rest) = rest.split_at(len);
                 Ok((bin, header_len + len))
             } else {
                 Err(Error::EndOfBuffer)
@@ -528,15 +529,11 @@ pub fn read_map_len<B: ByteSlice>(buf: B) -> Result<(usize, usize), Error> {
     }
 
     let marker = Marker::from(buf[0]);
-    let (header_len, len) = match marker {
+    let (len, header_len) = match marker {
         Marker::FixMap(len) => {
             let header_len = 1;
             let len = len as usize;
-            if buf.len() >= header_len + len {
-                (header_len, len)
-            } else {
-                return Err(Error::EndOfBuffer);
-            }
+            (len, header_len)
         }
         #[cfg(feature = "map16")]
         Marker::Map16 => {
@@ -545,11 +542,7 @@ pub fn read_map_len<B: ByteSlice>(buf: B) -> Result<(usize, usize), Error> {
                 return Err(Error::EndOfBuffer);
             }
             let len = BigEndian::read_u16(&buf[1..header_len]) as usize;
-            if buf.len() >= header_len + len {
-                (header_len, len)
-            } else {
-                return Err(Error::EndOfBuffer);
-            }
+            (len, header_len)
         }
         #[cfg(feature = "map32")]
         Marker::Map32 => {
@@ -558,15 +551,15 @@ pub fn read_map_len<B: ByteSlice>(buf: B) -> Result<(usize, usize), Error> {
                 return Err(Error::EndOfBuffer);
             }
             let len = BigEndian::read_u32(&buf[1..header_len]) as usize;
-            if buf.len() >= header_len + len {
-                (header_len, len)
-            } else {
-                return Err(Error::EndOfBuffer);
-            }
+            (len, header_len)
         }
         _ => return Err(Error::InvalidType),
     };
-    Ok((len, header_len))
+    if buf.len() >= header_len + len {
+        Ok((len, header_len))
+    } else {
+        Err(Error::EndOfBuffer)
+    }
 }
 
 pub fn skip_any<B: ByteSlice>(buf: B) -> Result<((), usize), Error> {
