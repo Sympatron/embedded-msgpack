@@ -1,4 +1,5 @@
-#[cfg(feature = "serde")] pub mod serde;
+#[cfg(feature = "serde")]
+pub mod serde;
 
 use crate::marker::Marker;
 

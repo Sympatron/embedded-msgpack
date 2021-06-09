@@ -1,4 +1,5 @@
-#[cfg(feature = "timestamp")] pub mod timestamp;
+#[cfg(feature = "timestamp")]
+pub mod timestamp;
 
 use crate::encode::{Error, Serializable};
 #[allow(unused_imports)]

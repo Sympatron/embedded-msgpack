@@ -119,8 +119,7 @@ impl<'a, 'b> ser::Serializer for &'a mut Serializer<'b> {
         _variant_index: u32,
         _variant: &'static str,
         _len: usize,
-    ) -> Result<Self::SerializeTupleVariant, Self::Error>
-    {
+    ) -> Result<Self::SerializeTupleVariant, Self::Error> {
         unreachable!()
     }
 
@@ -140,8 +139,7 @@ impl<'a, 'b> ser::Serializer for &'a mut Serializer<'b> {
         _variant_index: u32,
         _variant: &'static str,
         _len: usize,
-    ) -> Result<Self::SerializeStructVariant, Self::Error>
-    {
+    ) -> Result<Self::SerializeStructVariant, Self::Error> {
         unreachable!()
     }
 
