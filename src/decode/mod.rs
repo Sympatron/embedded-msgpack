@@ -28,6 +28,109 @@ pub fn from_slice<'a, T: ::serde::de::Deserialize<'a>>(buf: &'a [u8]) -> Result<
     Ok(value)
 }
 
+pub trait Deserializable {
+    fn from_slice(&mut self, buf: &[u8]) -> Result<usize, Error>;
+}
+
+impl Deserializable for Option<u8> {
+    fn from_slice(&mut self, buf: &[u8]) -> Result<usize, Error> {
+        let (v, n) = read_u8(buf)?;
+        *self = Some(v);
+        Ok(n)
+    }
+}
+impl Deserializable for Option<u16> {
+    fn from_slice(&mut self, buf: &[u8]) -> Result<usize, Error> {
+        let (v, n) = read_u16(buf)?;
+        *self = Some(v);
+        Ok(n)
+    }
+}
+impl Deserializable for Option<u32> {
+    fn from_slice(&mut self, buf: &[u8]) -> Result<usize, Error> {
+        let (v, n) = read_u32(buf)?;
+        *self = Some(v);
+        Ok(n)
+    }
+}
+impl Deserializable for Option<u64> {
+    fn from_slice(&mut self, buf: &[u8]) -> Result<usize, Error> {
+        let (v, n) = read_u64(buf)?;
+        *self = Some(v);
+        Ok(n)
+    }
+}
+impl Deserializable for Option<i8> {
+    fn from_slice(&mut self, buf: &[u8]) -> Result<usize, Error> {
+        let (v, n) = read_i8(buf)?;
+        *self = Some(v);
+        Ok(n)
+    }
+}
+impl Deserializable for Option<i16> {
+    fn from_slice(&mut self, buf: &[u8]) -> Result<usize, Error> {
+        let (v, n) = read_i16(buf)?;
+        *self = Some(v);
+        Ok(n)
+    }
+}
+impl Deserializable for Option<i32> {
+    fn from_slice(&mut self, buf: &[u8]) -> Result<usize, Error> {
+        let (v, n) = read_i32(buf)?;
+        *self = Some(v);
+        Ok(n)
+    }
+}
+impl Deserializable for Option<i64> {
+    fn from_slice(&mut self, buf: &[u8]) -> Result<usize, Error> {
+        let (v, n) = read_i64(buf)?;
+        *self = Some(v);
+        Ok(n)
+    }
+}
+
+pub fn read_raw_u8(buf: &[u8]) -> Result<(u8, &[u8]), Error> { buf.split_first().map(|(&x, rest)| (x, rest)).ok_or(Error::EndOfBuffer) }
+pub fn read_raw_u16<B: ByteSlice>(buf: B) -> Result<(u16, B), Error> {
+    // pub fn read_raw_u16(buf: &[u8]) -> Result<(u16, &[u8]), Error> {
+    if buf.len() < 2 {
+        return Err(Error::EndOfBuffer);
+    }
+    let (v, rest) = buf.split_at(2);
+    Ok((BigEndian::read_u16(&*v), rest))
+}
+pub fn read_raw_u32(buf: &[u8]) -> Result<(u32, &[u8]), Error> {
+    if buf.len() < 4 {
+        return Err(Error::EndOfBuffer);
+    }
+    let (v, rest) = buf.split_at(4);
+    Ok((BigEndian::read_u32(v), rest))
+}
+#[cfg(feature = "u64")]
+pub fn read_raw_u64(buf: &[u8]) -> Result<(u64, &[u8]), Error> {
+    if buf.len() < 8 {
+        return Err(Error::EndOfBuffer);
+    }
+    let (v, rest) = buf.split_at(8);
+    Ok((BigEndian::read_u64(v), rest))
+}
+fn read_raw_ux(buf: &[u8], num_bytes: u8) -> Result<(usize, &[u8]), Error> {
+    Ok(match num_bytes {
+        1 => {
+            let (x, rest) = read_raw_u8(buf)?;
+            (x as usize, rest)
+        }
+        2 => {
+            let (x, rest) = read_raw_u16(buf)?;
+            (x as usize, rest)
+        }
+        4 => {
+            let (x, rest) = read_raw_u32(buf)?;
+            (x as usize, rest)
+        }
+        _ => unreachable!(),
+    })
+}
+
 pub fn read_int<B: ByteSlice, T: FromPrimitive>(buf: B) -> Result<(T, usize), Error> {
     match read_u64(buf) {
         Ok((v, len)) => {
