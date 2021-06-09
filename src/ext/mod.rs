@@ -5,6 +5,7 @@ use crate::encode::{Error, Serializable};
 #[allow(unused_imports)]
 use crate::marker::Marker;
 
+#[allow(unused_imports)]
 use byteorder::{BigEndian, ByteOrder};
 
 pub struct Ext<'a> {

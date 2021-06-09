@@ -113,6 +113,7 @@ pub fn read_raw_u64(buf: &[u8]) -> Result<(u64, &[u8]), Error> {
     let (v, rest) = buf.split_at(8);
     Ok((BigEndian::read_u64(v), rest))
 }
+#[allow(dead_code)]
 fn read_raw_ux(buf: &[u8], num_bytes: u8) -> Result<(usize, &[u8]), Error> {
     Ok(match num_bytes {
         1 => {

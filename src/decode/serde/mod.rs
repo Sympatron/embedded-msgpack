@@ -15,6 +15,10 @@ type Result<T> = core::result::Result<T, Error>;
 
 #[cfg(debug_assertions)]
 fn print_debug<T>(prefix: &str, function_name: &str, de: &Deserializer) {
+    #[cfg(not(feature = "std"))]
+    extern crate std;
+    #[cfg(not(feature = "std"))]
+    use std::println;
     println!(
         "{}{}<{}> ({:?})",
         prefix,
@@ -25,6 +29,10 @@ fn print_debug<T>(prefix: &str, function_name: &str, de: &Deserializer) {
 }
 #[cfg(debug_assertions)]
 fn print_debug_value<T, V: core::fmt::Debug>(function_name: &str, de: &Deserializer, value: &V) {
+    #[cfg(not(feature = "std"))]
+    extern crate std;
+    #[cfg(not(feature = "std"))]
+    use std::println;
     println!(
         "{}<{}> => {:?}   ({:?})",
         function_name,
