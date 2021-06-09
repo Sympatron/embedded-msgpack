@@ -40,10 +40,24 @@ pub fn read_int<B: ByteSlice, T: FromPrimitive>(buf: B) -> Result<(T, usize), Er
         Err(kind) => Err(kind),
     }
 }
+#[cfg(feature = "i64")]
 pub fn read_sint<B: ByteSlice, T: FromPrimitive>(buf: B) -> Result<(T, usize), Error> {
     match read_i64(buf) {
         Ok((v, len)) => {
             if let Some(v) = T::from_i64(v) {
+                Ok((v, len))
+            } else {
+                Err(Error::OutOfBounds)
+            }
+        }
+        Err(kind) => Err(kind),
+    }
+}
+#[cfg(not(feature = "i64"))]
+pub fn read_sint<B: ByteSlice, T: FromPrimitive>(buf: B) -> Result<(T, usize), Error> {
+    match read_i32(buf) {
+        Ok((v, len)) => {
+            if let Some(v) = T::from_i32(v) {
                 Ok((v, len))
             } else {
                 Err(Error::OutOfBounds)
