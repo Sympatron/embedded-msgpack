@@ -465,3 +465,61 @@ pub fn read_map_len<B: ByteSlice>(buf: B) -> Result<(usize, usize), Error> {
     };
     Ok((len, header_len))
 }
+
+pub fn skip_any<B: ByteSlice>(buf: B) -> Result<((), usize), Error> {
+    let marker = Marker::from_u8(buf[0]);
+    let n = match marker {
+        Marker::FixPos(_) => 1,
+        Marker::U8 => 2,
+        Marker::U16 => 3,
+        Marker::U32 => 5,
+        Marker::U64 => 9,
+        Marker::FixNeg(_) => 1,
+        Marker::I8 => 2,
+        Marker::I16 => 3,
+        Marker::I32 => 5,
+        Marker::I64 => 9,
+
+        Marker::F32 => 5,
+        Marker::F64 => 9,
+
+        Marker::Null => 1,
+
+        Marker::True => 1,
+        Marker::False => 1,
+
+        Marker::FixStr(n) => n as usize + 1,
+        Marker::Str8 | Marker::Bin8 => 2 + buf[1] as usize,
+        Marker::Str16 | Marker::Bin16 => 3 + BigEndian::read_u16(&buf[1..3]) as usize,
+        Marker::Str32 | Marker::Bin32 => 5 + BigEndian::read_u32(&buf[1..5]) as usize,
+
+        Marker::FixArray(_) | Marker::Array16 | Marker::Array32 => {
+            let (len, n) = read_array_len(&buf[..])?;
+            let mut n = n;
+            for _ in 0..len {
+                //TODO: May overlow stack on embedded systems. Maybe add some kind of safeguard to limit recursion depth
+                n += skip_any(&buf[n..])?.1;
+            }
+            n
+        }
+        Marker::FixMap(_) | Marker::Map16 | Marker::Map32 => {
+            let (len, n) = read_map_len(&buf[..])?;
+            let mut n = n;
+            for _ in 0..len * 2 {
+                //TODO: May overlow stack on embedded systems. Maybe add some kind of safeguard to limit recursion depth
+                n += skip_any(&buf[n..])?.1;
+            }
+            n
+        }
+        Marker::FixExt1 => 3,
+        Marker::FixExt2 => 4,
+        Marker::FixExt4 => 6,
+        Marker::FixExt8 => 10,
+        Marker::FixExt16 => 18,
+        Marker::Ext8 => 3 + buf[1] as usize,
+        Marker::Ext16 => 4 + BigEndian::read_u16(&buf[1..3]) as usize,
+        Marker::Ext32 => 6 + BigEndian::read_u32(&buf[1..5]) as usize,
+        Marker::Reserved => 1,
+    };
+    Ok(((), n))
+}

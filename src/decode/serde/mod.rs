@@ -149,43 +149,9 @@ impl<'a, 'de> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     /// Unsupported. Can’t parse a value without knowing its expected type.
     fn deserialize_any<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value> {
         print_debug::<V>("Deserializer::deserialize_", "any", &self);
-        match self.peek() {
-            Some(Marker::FixPos(_)) | Some(Marker::U8) => self.deserialize_u8(visitor),
-            Some(Marker::U16) => self.deserialize_u16(visitor),
-            Some(Marker::U32) => self.deserialize_u32(visitor),
-            Some(Marker::U64) => self.deserialize_u64(visitor),
-
-            Some(Marker::FixNeg(_)) | Some(Marker::I8) => self.deserialize_i8(visitor),
-            Some(Marker::I16) => self.deserialize_i16(visitor),
-            Some(Marker::I32) => self.deserialize_i32(visitor),
-            Some(Marker::I64) => self.deserialize_i64(visitor),
-
-            Some(Marker::F32) => self.deserialize_f32(visitor),
-            Some(Marker::F64) => self.deserialize_f64(visitor),
-
-            Some(Marker::Null) => self.deserialize_option(visitor),
-
-            Some(Marker::True) => self.deserialize_bool(visitor),
-            Some(Marker::False) => self.deserialize_bool(visitor),
-
-            Some(Marker::FixStr(_)) | Some(Marker::Str8) | Some(Marker::Str16) | Some(Marker::Str32) => self.deserialize_str(visitor),
-            Some(Marker::Bin8) | Some(Marker::Bin16) | Some(Marker::Bin32) => self.deserialize_bytes(visitor),
-
-            Some(Marker::FixArray(_)) | Some(Marker::Array16) | Some(Marker::Array32) => self.deserialize_seq(visitor),
-            Some(Marker::FixMap(_)) | Some(Marker::Map16) | Some(Marker::Map32) => self.deserialize_map(visitor),
-
-            Some(Marker::FixExt1)
-            | Some(Marker::FixExt2)
-            | Some(Marker::FixExt4)
-            | Some(Marker::FixExt8)
-            | Some(Marker::FixExt16)
-            | Some(Marker::Ext8)
-            | Some(Marker::Ext16)
-            | Some(Marker::Ext32) => Err(Error::InvalidType),
-
-            Some(Marker::Reserved) => Err(Error::InvalidType),
-            None => visitor.visit_unit(),
-        }
+        let (_, n) = super::skip_any(&self.slice[self.index..])?;
+        self.index += n;
+        visitor.visit_unit()
     }
 
     /// Used to throw out fields that we don’t want to keep in our structs.
