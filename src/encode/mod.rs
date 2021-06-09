@@ -179,36 +179,46 @@ pub fn serialize_f64(value: f64, buf: &mut [u8]) -> Result<usize, Error> {
 }
 
 impl Serializable for u8 {
+    #[inline(always)]
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_u8(*self, buf) }
 }
 impl Serializable for u16 {
+    #[inline(always)]
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_u16(*self, buf) }
 }
 impl Serializable for u32 {
+    #[inline(always)]
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_u32(*self, buf) }
 }
 #[cfg(feature = "u64")]
 impl Serializable for u64 {
+    #[inline(always)]
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_u64(*self, buf) }
 }
 impl Serializable for i8 {
+    #[inline(always)]
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_i8(*self, buf) }
 }
 impl Serializable for i16 {
+    #[inline(always)]
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_i16(*self, buf) }
 }
 impl Serializable for i32 {
+    #[inline(always)]
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_i32(*self, buf) }
 }
 #[cfg(feature = "i64")]
 impl Serializable for i64 {
+    #[inline(always)]
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_i64(*self, buf) }
 }
 
 impl Serializable for f32 {
+    #[inline(always)]
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_f32(*self, buf) }
 }
 impl Serializable for f64 {
+    #[inline(always)]
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_f64(*self, buf) }
 }
 
@@ -238,6 +248,7 @@ where T: Serializable
     }
 }
 impl Serializable for () {
+    #[inline(always)]
     fn write_into_slice(&self, _buf: &mut [u8]) -> Result<usize, Error> { Ok(0) }
 }
 
@@ -296,6 +307,7 @@ where
     K: Serializable,
     V: Serializable,
 {
+    #[inline(always)]
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> {
         let index = serialize_map_kay_value(&self.0, &self.1, buf)?;
         Ok(index)
