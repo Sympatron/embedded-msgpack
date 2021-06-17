@@ -193,10 +193,9 @@ impl<'a, 'de> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         self.deserialize_str(visitor)
     }
 
-    /// Unsupported. We can’t parse newtypes because we don’t know the underlying type.
-    fn deserialize_newtype_struct<V: Visitor<'de>>(self, _name: &'static str, _visitor: V) -> Result<V::Value> {
+    fn deserialize_newtype_struct<V: Visitor<'de>>(self, _name: &'static str, visitor: V) -> Result<V::Value> {
         print_debug::<V>("Deserializer::deserialize_", "newtype_struct", &self);
-        unreachable!()
+        visitor.visit_newtype_struct(self)
     }
 
     /// Unsupported. String is not available in no-std.

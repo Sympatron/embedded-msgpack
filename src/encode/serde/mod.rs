@@ -92,9 +92,9 @@ impl<'a, 'b> ser::Serializer for &'a mut Serializer<'b> {
         self.serialize_str(variant)
     }
 
-    fn serialize_newtype_struct<T: ?Sized>(self, _name: &'static str, _value: &T) -> Result<Self::Ok, Self::Error>
+    fn serialize_newtype_struct<T: ?Sized + ::serde::Serialize>(self, _name: &'static str, v: &T) -> Result<Self::Ok, Self::Error>
     where T: ser::Serialize {
-        unreachable!()
+        v.serialize(self)
     }
 
     fn serialize_newtype_variant<T: ?Sized>(
