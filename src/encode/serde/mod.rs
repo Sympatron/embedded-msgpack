@@ -9,7 +9,7 @@ mod seq;
 mod struct_;
 
 use super::Error;
-use crate::encode::Serializable;
+use crate::encode::SerializeIntoSlice;
 
 pub(crate) struct Serializer<'a> {
     buf: &'a mut [u8],
@@ -18,7 +18,7 @@ pub(crate) struct Serializer<'a> {
 
 impl<'a> Serializer<'a> {
     fn new(buf: &'a mut [u8]) -> Self { Serializer { buf, pos: 0 } }
-    fn append<S: Serializable>(&mut self, value: S) -> Result<(), Error> {
+    fn append<S: SerializeIntoSlice>(&mut self, value: S) -> Result<(), Error> {
         self.pos += value.write_into_slice(&mut self.buf[self.pos..])?;
         Ok(())
     }

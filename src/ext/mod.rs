@@ -1,7 +1,7 @@
 #[cfg(feature = "timestamp")]
 pub mod timestamp;
 
-use crate::encode::{Error, Serializable};
+use crate::encode::{Error, SerializeIntoSlice};
 #[allow(unused_imports)]
 use crate::marker::Marker;
 
@@ -155,6 +155,6 @@ pub fn serialize_ext<'a>(value: &Ext<'a>, buf: &mut [u8]) -> Result<usize, Error
 }
 
 #[cfg(feature = "ext")]
-impl<'a> Serializable for &Ext<'a> {
+impl<'a> SerializeIntoSlice for &Ext<'a> {
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_ext(self, buf) }
 }

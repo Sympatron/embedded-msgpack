@@ -28,60 +28,60 @@ pub fn from_slice<'a, T: ::serde::de::Deserialize<'a>>(buf: &'a [u8]) -> Result<
     Ok(value)
 }
 
-pub trait Deserializable {
+pub trait DeserializeFromSlice {
     fn from_slice(&mut self, buf: &[u8]) -> Result<usize, Error>;
 }
 
-impl Deserializable for Option<u8> {
+impl DeserializeFromSlice for Option<u8> {
     fn from_slice(&mut self, buf: &[u8]) -> Result<usize, Error> {
         let (v, n) = read_u8(buf)?;
         *self = Some(v);
         Ok(n)
     }
 }
-impl Deserializable for Option<u16> {
+impl DeserializeFromSlice for Option<u16> {
     fn from_slice(&mut self, buf: &[u8]) -> Result<usize, Error> {
         let (v, n) = read_u16(buf)?;
         *self = Some(v);
         Ok(n)
     }
 }
-impl Deserializable for Option<u32> {
+impl DeserializeFromSlice for Option<u32> {
     fn from_slice(&mut self, buf: &[u8]) -> Result<usize, Error> {
         let (v, n) = read_u32(buf)?;
         *self = Some(v);
         Ok(n)
     }
 }
-impl Deserializable for Option<u64> {
+impl DeserializeFromSlice for Option<u64> {
     fn from_slice(&mut self, buf: &[u8]) -> Result<usize, Error> {
         let (v, n) = read_u64(buf)?;
         *self = Some(v);
         Ok(n)
     }
 }
-impl Deserializable for Option<i8> {
+impl DeserializeFromSlice for Option<i8> {
     fn from_slice(&mut self, buf: &[u8]) -> Result<usize, Error> {
         let (v, n) = read_i8(buf)?;
         *self = Some(v);
         Ok(n)
     }
 }
-impl Deserializable for Option<i16> {
+impl DeserializeFromSlice for Option<i16> {
     fn from_slice(&mut self, buf: &[u8]) -> Result<usize, Error> {
         let (v, n) = read_i16(buf)?;
         *self = Some(v);
         Ok(n)
     }
 }
-impl Deserializable for Option<i32> {
+impl DeserializeFromSlice for Option<i32> {
     fn from_slice(&mut self, buf: &[u8]) -> Result<usize, Error> {
         let (v, n) = read_i32(buf)?;
         *self = Some(v);
         Ok(n)
     }
 }
-impl Deserializable for Option<i64> {
+impl DeserializeFromSlice for Option<i64> {
     fn from_slice(&mut self, buf: &[u8]) -> Result<usize, Error> {
         let (v, n) = read_i64(buf)?;
         *self = Some(v);

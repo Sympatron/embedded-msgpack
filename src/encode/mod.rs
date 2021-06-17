@@ -27,7 +27,7 @@ impl ::core::fmt::Display for Error {
 #[cfg(feature = "std")]
 impl ::std::error::Error for Error {}
 
-pub trait Serializable {
+pub trait SerializeIntoSlice {
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error>;
 }
 
@@ -178,51 +178,51 @@ pub fn serialize_f64(value: f64, buf: &mut [u8]) -> Result<usize, Error> {
     Ok(9)
 }
 
-impl Serializable for u8 {
+impl SerializeIntoSlice for u8 {
     #[inline(always)]
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_u8(*self, buf) }
 }
-impl Serializable for u16 {
+impl SerializeIntoSlice for u16 {
     #[inline(always)]
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_u16(*self, buf) }
 }
-impl Serializable for u32 {
+impl SerializeIntoSlice for u32 {
     #[inline(always)]
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_u32(*self, buf) }
 }
 #[cfg(feature = "u64")]
-impl Serializable for u64 {
+impl SerializeIntoSlice for u64 {
     #[inline(always)]
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_u64(*self, buf) }
 }
-impl Serializable for i8 {
+impl SerializeIntoSlice for i8 {
     #[inline(always)]
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_i8(*self, buf) }
 }
-impl Serializable for i16 {
+impl SerializeIntoSlice for i16 {
     #[inline(always)]
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_i16(*self, buf) }
 }
-impl Serializable for i32 {
+impl SerializeIntoSlice for i32 {
     #[inline(always)]
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_i32(*self, buf) }
 }
 #[cfg(feature = "i64")]
-impl Serializable for i64 {
+impl SerializeIntoSlice for i64 {
     #[inline(always)]
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_i64(*self, buf) }
 }
 
-impl Serializable for f32 {
+impl SerializeIntoSlice for f32 {
     #[inline(always)]
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_f32(*self, buf) }
 }
-impl Serializable for f64 {
+impl SerializeIntoSlice for f64 {
     #[inline(always)]
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_f64(*self, buf) }
 }
 
-impl Serializable for bool {
+impl SerializeIntoSlice for bool {
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> {
         if buf.is_empty() {
             return Err(Error::EndOfBuffer);
@@ -232,12 +232,12 @@ impl Serializable for bool {
     }
 }
 
-impl<T> Serializable for Option<T>
-where T: Serializable
+impl<T> SerializeIntoSlice for Option<T>
+where T: SerializeIntoSlice
 {
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> {
         if let Some(value) = self {
-            Serializable::write_into_slice(value, buf)
+            SerializeIntoSlice::write_into_slice(value, buf)
         } else {
             if buf.is_empty() {
                 return Err(Error::EndOfBuffer);
@@ -247,7 +247,7 @@ where T: Serializable
         }
     }
 }
-impl Serializable for () {
+impl SerializeIntoSlice for () {
     #[inline(always)]
     fn write_into_slice(&self, _buf: &mut [u8]) -> Result<usize, Error> { Ok(0) }
 }
@@ -289,7 +289,7 @@ impl<'a> ::serde::Deserialize<'a> for Binary<'a> {
     }
 }
 
-impl<'a> Serializable for Binary<'a> {
+impl<'a> SerializeIntoSlice for Binary<'a> {
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> {
         let n = self.len();
         match n {
@@ -326,10 +326,10 @@ impl<'a> Serializable for Binary<'a> {
     }
 }
 
-impl<K, V> Serializable for &(K, V)
+impl<K, V> SerializeIntoSlice for &(K, V)
 where
-    K: Serializable,
-    V: Serializable,
+    K: SerializeIntoSlice,
+    V: SerializeIntoSlice,
 {
     #[inline(always)]
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> {
@@ -338,7 +338,7 @@ where
     }
 }
 
-impl Serializable for &str {
+impl SerializeIntoSlice for &str {
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> {
         let n = self.len();
         match n {
@@ -389,10 +389,10 @@ impl Serializable for &str {
     }
 }
 
-impl<K, V> Serializable for &[(K, V)]
+impl<K, V> SerializeIntoSlice for &[(K, V)]
 where
-    K: Serializable,
-    V: Serializable,
+    K: SerializeIntoSlice,
+    V: SerializeIntoSlice,
 {
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> {
         // serialize_sequence(self, SeuqenceType::Map, buf)
@@ -404,14 +404,14 @@ where
     }
 }
 
-impl<T> Serializable for &[T]
-where T: Serializable
+impl<T> SerializeIntoSlice for &[T]
+where T: SerializeIntoSlice
 {
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> {
         // serialize_sequence(self, SeuqenceType::Array, buf)
         let mut index = serialize_array_start(self.len(), buf)?;
         for i in self.iter() {
-            index += Serializable::write_into_slice(i, &mut buf[index..])?;
+            index += SerializeIntoSlice::write_into_slice(i, &mut buf[index..])?;
         }
         Ok(index)
     }
@@ -430,10 +430,10 @@ impl SeuqenceType {
     }
 }
 
-pub fn serialize_sequence<T: Serializable>(seq: &[T], typ: SeuqenceType, buf: &mut [u8]) -> Result<usize, Error> {
+pub fn serialize_sequence<T: SerializeIntoSlice>(seq: &[T], typ: SeuqenceType, buf: &mut [u8]) -> Result<usize, Error> {
     let mut index = typ.serialize_start(seq.len(), buf)?;
     for i in seq.iter() {
-        index += Serializable::write_into_slice(i, &mut buf[index..])?;
+        index += SerializeIntoSlice::write_into_slice(i, &mut buf[index..])?;
     }
     Ok(index)
 }
@@ -485,9 +485,9 @@ pub fn serialize_map_start(n: usize, buf: &mut [u8]) -> Result<usize, Error> {
         unimplemented!()
     }
 }
-pub fn serialize_map_kay_value<K: Serializable, V: Serializable>(key: &K, value: &V, buf: &mut [u8]) -> Result<usize, Error> {
+pub fn serialize_map_kay_value<K: SerializeIntoSlice, V: SerializeIntoSlice>(key: &K, value: &V, buf: &mut [u8]) -> Result<usize, Error> {
     let mut index = 0;
-    index += Serializable::write_into_slice(key, &mut buf[index..])?;
-    index += Serializable::write_into_slice(value, &mut buf[index..])?;
+    index += SerializeIntoSlice::write_into_slice(key, &mut buf[index..])?;
+    index += SerializeIntoSlice::write_into_slice(value, &mut buf[index..])?;
     Ok(index)
 }

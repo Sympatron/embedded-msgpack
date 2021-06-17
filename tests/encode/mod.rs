@@ -1,4 +1,4 @@
-use embedded_msgpack::encode::{Binary, Serializable};
+use embedded_msgpack::encode::{Binary, SerializeIntoSlice};
 
 fn print_slice(data: &[u8]) {
     print!("[");
@@ -8,7 +8,7 @@ fn print_slice(data: &[u8]) {
     println!("]");
 }
 
-fn test_encode_direct<T: Serializable>(data: &T, expected: &[u8]) {
+fn test_encode_direct<T: SerializeIntoSlice>(data: &T, expected: &[u8]) {
     let mut buf = [0u8; 1000];
     let len = data.write_into_slice(&mut buf[..]).unwrap();
     print_slice(&buf[..len]);
@@ -25,13 +25,13 @@ fn test_encode_serde<T: serde::Serialize>(data: &T, expected: &[u8]) {
 }
 #[cfg(feature = "serde")]
 fn test_encode<T>(data: T, expected: &[u8])
-where T: Serializable + serde::Serialize {
+where T: SerializeIntoSlice + serde::Serialize {
     test_encode_direct(&data, expected);
     test_encode_serde(&data, expected);
 }
 #[cfg(not(feature = "serde"))]
 fn test_encode<T>(data: T, expected: &[u8])
-where T: Serializable {
+where T: SerializeIntoSlice {
     test_encode_direct(&data, expected);
 }
 

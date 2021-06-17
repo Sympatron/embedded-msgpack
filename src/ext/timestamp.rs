@@ -2,7 +2,7 @@ use byteorder::{BigEndian, ByteOrder};
 use core::convert::{TryFrom, TryInto};
 
 use crate::{
-    encode::{Error, Serializable},
+    encode::{Error, SerializeIntoSlice},
     Ext,
 };
 
@@ -64,7 +64,7 @@ impl Timestamp {
     }
 }
 
-impl Serializable for Timestamp {
+impl SerializeIntoSlice for Timestamp {
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> {
         if self.seconds >> 34 == 0 {
             let x = ((self.nanoseconds as u64) << 34) | self.seconds as u64;
