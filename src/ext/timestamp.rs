@@ -1,34 +1,33 @@
 use byteorder::{BigEndian, ByteOrder};
-use core::{
-    convert::{TryFrom, TryInto},
-    marker::PhantomData,
-};
+use core::convert::{TryFrom, TryInto};
 
 use crate::{
     encode::{Error, Serializable},
     Ext,
 };
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 const EXT_TIMESTAMP: i8 = -1;
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[cfg_attr(feature = "std", derive(Debug))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Timestamp {
-    pub seconds: i64,
-    pub nanoseconds: u32,
-    prevent_new: PhantomData<u8>,
+    seconds: i64,
+    nanoseconds: u32,
 }
 
 impl Timestamp {
-    pub fn new(seconds: i64, nanoseconds: u32) -> Result<Timestamp, Error> {
+    pub const fn new(seconds: i64, nanoseconds: u32) -> Result<Timestamp, Error> {
         if nanoseconds >= 1000000000 {
             return Err(Error::OutOfBounds);
         }
-        Ok(Timestamp {
-            seconds,
-            nanoseconds,
-            prevent_new: PhantomData::default(),
-        })
+        Ok(Timestamp { seconds, nanoseconds })
     }
+    pub const fn seconds(&self) -> i64 { self.seconds }
+    pub const fn nanoseconds(&self) -> u32 { self.nanoseconds }
     pub fn to_ext<'a>(&self, buf: &'a mut [u8]) -> Result<Ext<'a>, Error> {
         if self.seconds >> 34 == 0 {
             let x = ((self.nanoseconds as u64) << 34) | self.seconds as u64;
@@ -135,6 +134,16 @@ impl<'a> TryFrom<Ext<'a>> for Timestamp {
         }
     }
 }
+
+// #[cfg(feature = "std")]
+// impl core::fmt::Debug for Timestamp {
+//     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+//         f.debug_struct("Timestamp")
+//             .field("seconds", &self.seconds)
+//             .field("nanoseconds", &self.nanoseconds)
+//             .finish()
+//     }
+// }
 
 // Does not make that much sense since it will be as big or bigger then Timestamp in memory...
 pub struct TimestampRef<'a> {
