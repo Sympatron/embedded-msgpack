@@ -1,4 +1,4 @@
-fn test_decode<'a, T: serde::de::Deserialize<'a> + Eq + std::fmt::Debug>(expected: T, variants: &'a [&'a [u8]]) {
+fn test_decode<'a, T: serde::de::Deserialize<'a> + PartialEq + std::fmt::Debug>(expected: T, variants: &'a [&'a [u8]]) {
     for &x in variants.iter() {
         let v: T = embedded_msgpack::decode::from_slice(x).unwrap();
         assert_eq!(expected, v);
