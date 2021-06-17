@@ -253,6 +253,7 @@ impl Serializable for () {
 }
 
 #[repr(transparent)]
+#[cfg_attr(feature = "std", derive(core::fmt::Debug))]
 pub struct Binary<'a>(&'a [u8]);
 impl<'a> Binary<'a> {
     pub fn new(slice: &'a [u8]) -> Self { Binary(slice) }
@@ -263,6 +264,29 @@ impl<'a> Deref for Binary<'a> {
 }
 impl<'a> From<&'a [u8]> for Binary<'a> {
     fn from(slice: &'a [u8]) -> Self { Binary(slice) }
+}
+impl<'a> PartialEq for Binary<'a> {
+    fn eq(&self, other: &Binary<'a>) -> bool { self.0 == other.0 }
+}
+
+#[cfg(feature = "serde")]
+impl<'a> ::serde::Serialize for Binary<'a> {
+    fn serialize<S: ::serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> { serializer.serialize_bytes(self.0) }
+}
+#[cfg(feature = "serde")]
+struct BinaryVisitor;
+
+#[cfg(feature = "serde")]
+impl<'de> ::serde::de::Visitor<'de> for BinaryVisitor {
+    type Value = Binary<'de>;
+    fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result { formatter.write_str("a byte array") }
+    fn visit_borrowed_bytes<E: ::serde::de::Error>(self, v: &'de [u8]) -> Result<Self::Value, E> { Ok(Binary::new(v)) }
+}
+#[cfg(feature = "serde")]
+impl<'a> ::serde::Deserialize<'a> for Binary<'a> {
+    fn deserialize<D: ::serde::Deserializer<'a>>(deserializer: D) -> Result<Self, D::Error> {
+        deserializer.deserialize_bytes(BinaryVisitor)
+    }
 }
 
 impl<'a> Serializable for Binary<'a> {
