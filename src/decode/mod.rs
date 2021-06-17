@@ -270,21 +270,21 @@ pub fn read_i64<B: ByteSlice>(buf: B) -> Result<(i64, usize), Error> {
         }
         Marker::I8 => {
             if buf.len() >= 2 {
-                Ok((buf[1] as i64, 2))
+                Ok((buf[1] as i8 as i64, 2))
             } else {
                 Err(Error::EndOfBuffer)
             }
         }
         Marker::I16 => {
             if buf.len() >= 3 {
-                Ok((BigEndian::read_i16(&buf[1..3]) as i64, 3))
+                Ok((BigEndian::read_i16(&buf[1..3]) as i16 as i64, 3))
             } else {
                 Err(Error::EndOfBuffer)
             }
         }
         Marker::I32 => {
             if buf.len() >= 5 {
-                Ok((BigEndian::read_i32(&buf[1..5]) as i64, 5))
+                Ok((BigEndian::read_i32(&buf[1..5]) as i32 as i64, 5))
             } else {
                 Err(Error::EndOfBuffer)
             }
