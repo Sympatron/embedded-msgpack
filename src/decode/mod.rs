@@ -4,10 +4,8 @@ mod serde;
 use crate::marker::Marker;
 
 use byteorder::{BigEndian, ByteOrder};
-use zerocopy::ByteSlice;
-// use ::zerocopy::byteorder::{U16, U32, U64, I16, I32, I64};
 use num_traits::cast::FromPrimitive;
-// use core::convert::TryInto;
+use zerocopy::ByteSlice;
 
 #[derive(Debug)]
 pub enum Error {
@@ -134,26 +132,14 @@ fn read_raw_ux(buf: &[u8], num_bytes: u8) -> Result<(usize, &[u8]), Error> {
 
 pub fn read_int<B: ByteSlice, T: FromPrimitive>(buf: B) -> Result<(T, usize), Error> {
     match read_u64(buf) {
-        Ok((v, len)) => {
-            if let Some(v) = T::from_u64(v) {
-                Ok((v, len))
-            } else {
-                Err(Error::OutOfBounds)
-            }
-        }
+        Ok((v, len)) => T::from_u64(v).map_or(Err(Error::OutOfBounds), |v| Ok((v, len))),
         Err(kind) => Err(kind),
     }
 }
 #[cfg(feature = "i64")]
 pub fn read_sint<B: ByteSlice, T: FromPrimitive>(buf: B) -> Result<(T, usize), Error> {
     match read_i64(buf) {
-        Ok((v, len)) => {
-            if let Some(v) = T::from_i64(v) {
-                Ok((v, len))
-            } else {
-                Err(Error::OutOfBounds)
-            }
-        }
+        Ok((v, len)) => T::from_i64(v).map_or(Err(Error::OutOfBounds), |v| Ok((v, len))),
         Err(kind) => Err(kind),
     }
 }
@@ -213,13 +199,7 @@ pub fn read_u64<B: ByteSlice>(buf: B) -> Result<(u64, usize), Error> {
             }
         }
         _ => match read_i64(buf) {
-            Ok((i, l)) => {
-                if let Some(u) = u64::from_i64(i) {
-                    Ok((u, l))
-                } else {
-                    Err(Error::OutOfBounds)
-                }
-            }
+            Ok((i, l)) => u64::from_i64(i).map_or(Err(Error::OutOfBounds), |u| Ok((u, l))),
             Err(kind) => Err(kind),
         },
     }
@@ -232,26 +212,26 @@ pub fn read_i64<B: ByteSlice>(buf: B) -> Result<(i64, usize), Error> {
 
     let marker = Marker::from(buf[0]);
     match marker {
-        Marker::FixPos(val) => Ok((val as i64, 1)),
-        Marker::FixNeg(val) => Ok((val as i64, 1)),
+        Marker::FixPos(val) => Ok((i64::from(val), 1)),
+        Marker::FixNeg(val) => Ok((i64::from(val), 1)),
 
         Marker::U8 => {
             if buf.len() >= 2 {
-                Ok((buf[1] as i64, 2))
+                Ok((i64::from(buf[1]), 2))
             } else {
                 Err(Error::EndOfBuffer)
             }
         }
         Marker::U16 => {
             if buf.len() >= 3 {
-                Ok((BigEndian::read_u16(&buf[1..3]) as i64, 3))
+                Ok((i64::from(BigEndian::read_u16(&buf[1..3])), 3))
             } else {
                 Err(Error::EndOfBuffer)
             }
         }
         Marker::U32 => {
             if buf.len() >= 5 {
-                Ok((BigEndian::read_u32(&buf[1..5]) as i64, 5))
+                Ok((i64::from(BigEndian::read_u32(&buf[1..5])), 5))
             } else {
                 Err(Error::EndOfBuffer)
             }
@@ -259,39 +239,36 @@ pub fn read_i64<B: ByteSlice>(buf: B) -> Result<(i64, usize), Error> {
         Marker::U64 => {
             if buf.len() >= 9 {
                 let u = BigEndian::read_u64(&buf[1..9]);
-                if let Some(i) = i64::from_u64(u) {
-                    Ok((i, 9))
-                } else {
-                    Err(Error::OutOfBounds)
-                }
+                i64::from_u64(u).map_or(Err(Error::OutOfBounds), |i| Ok((i, 9)))
             } else {
                 Err(Error::EndOfBuffer)
             }
         }
+        #[allow(clippy::cast_possible_wrap)]
         Marker::I8 => {
             if buf.len() >= 2 {
-                Ok((buf[1] as i8 as i64, 2))
+                Ok((i64::from(buf[1] as i8), 2))
             } else {
                 Err(Error::EndOfBuffer)
             }
         }
         Marker::I16 => {
             if buf.len() >= 3 {
-                Ok((BigEndian::read_i16(&buf[1..3]) as i16 as i64, 3))
+                Ok((i64::from(BigEndian::read_i16(&buf[1..3])), 3))
             } else {
                 Err(Error::EndOfBuffer)
             }
         }
         Marker::I32 => {
             if buf.len() >= 5 {
-                Ok((BigEndian::read_i32(&buf[1..5]) as i32 as i64, 5))
+                Ok((i64::from(BigEndian::read_i32(&buf[1..5])), 5))
             } else {
                 Err(Error::EndOfBuffer)
             }
         }
         Marker::I64 => {
             if buf.len() >= 9 {
-                Ok((BigEndian::read_i64(&buf[1..9]) as i64, 9))
+                Ok((BigEndian::read_i64(&buf[1..9]), 9))
             } else {
                 Err(Error::EndOfBuffer)
             }
@@ -327,7 +304,7 @@ pub fn read_f64<B: ByteSlice>(buf: B) -> Result<(f64, usize), Error> {
         Marker::F32 => {
             if buf.len() >= 5 {
                 let v = BigEndian::read_f32(&buf[1..5]);
-                Ok((v as f64, 5))
+                Ok((f64::from(v), 5))
             } else {
                 Err(Error::EndOfBuffer)
             }
@@ -580,10 +557,7 @@ pub fn skip_any<B: ByteSlice>(buf: B) -> Result<((), usize), Error> {
         Marker::F32 => 5,
         Marker::F64 => 9,
 
-        Marker::Null => 1,
-
-        Marker::True => 1,
-        Marker::False => 1,
+        Marker::Null | Marker::True | Marker::False | Marker::Reserved => 1,
 
         Marker::FixStr(n) => n as usize + 1,
         Marker::Str8 | Marker::Bin8 => 2 + buf[1] as usize,
@@ -616,7 +590,6 @@ pub fn skip_any<B: ByteSlice>(buf: B) -> Result<((), usize), Error> {
         Marker::Ext8 => 3 + buf[1] as usize,
         Marker::Ext16 => 4 + BigEndian::read_u16(&buf[1..3]) as usize,
         Marker::Ext32 => 6 + BigEndian::read_u32(&buf[1..5]) as usize,
-        Marker::Reserved => 1,
     };
     Ok(((), n))
 }

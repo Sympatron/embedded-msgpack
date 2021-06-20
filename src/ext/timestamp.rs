@@ -21,17 +21,19 @@ pub struct Timestamp {
 
 impl Timestamp {
     pub const fn new(seconds: i64, nanoseconds: u32) -> Result<Timestamp, Error> {
-        if nanoseconds >= 1000000000 {
+        if nanoseconds >= 1_000_000_000 {
             return Err(Error::OutOfBounds);
         }
         Ok(Timestamp { seconds, nanoseconds })
     }
     pub const fn seconds(&self) -> i64 { self.seconds }
     pub const fn nanoseconds(&self) -> u32 { self.nanoseconds }
+    #[allow(clippy::cast_sign_loss)]
+    #[allow(clippy::cast_possible_truncation)]
     pub fn to_ext<'a>(&self, buf: &'a mut [u8]) -> Result<Ext<'a>, Error> {
         if self.seconds >> 34 == 0 {
-            let x = ((self.nanoseconds as u64) << 34) | self.seconds as u64;
-            if x & 0xffffffff00000000u64 == 0 {
+            let x = (u64::from(self.nanoseconds) << 34) | self.seconds as u64;
+            if x & 0xffff_ffff_0000_0000_u64 == 0 {
                 // timestamp 32
                 if buf.len() < 4 {
                     return Err(Error::EndOfBuffer);
@@ -53,7 +55,7 @@ impl Timestamp {
                 if buf.len() < 12 {
                     return Err(Error::EndOfBuffer);
                 }
-                BigEndian::write_u32(&mut buf[..], self.nanoseconds);
+                BigEndian::write_u32(buf, self.nanoseconds);
                 BigEndian::write_i64(&mut buf[4..], self.seconds);
                 return Ok(Ext::new(-1, &buf[0..12]));
                 // serialize(0xc7, 12, -1, time.tv_nsec, time.tv_sec)
@@ -65,10 +67,12 @@ impl Timestamp {
 }
 
 impl SerializeIntoSlice for Timestamp {
+    #[allow(clippy::cast_sign_loss)]
+    #[allow(clippy::cast_possible_truncation)]
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> {
         if self.seconds >> 34 == 0 {
-            let x = ((self.nanoseconds as u64) << 34) | self.seconds as u64;
-            if x & 0xffffffff00000000u64 == 0 {
+            let x = (u64::from(self.nanoseconds) << 34) | self.seconds as u64;
+            if x & 0xffff_ffff_0000_0000_u64 == 0 {
                 // timestamp 32
                 if buf.len() < 6 {
                     return Err(Error::EndOfBuffer);
@@ -113,16 +117,38 @@ impl SerializeIntoSlice for Timestamp {
 impl<'a> TryFrom<Ext<'a>> for Timestamp {
     type Error = Error;
 
+    #[allow(clippy::cast_possible_truncation)]
     fn try_from(ext: Ext<'a>) -> Result<Self, Self::Error> {
         if ext.typ == EXT_TIMESTAMP {
             match ext.data.len() {
-                4 => Timestamp::new(BigEndian::read_u32(ext.data) as i64, 0),
+                4 => {
+                    // timestamp 32 stores the number of seconds that have elapsed since 1970-01-01 00:00:00 UTC
+                    // in an 32-bit unsigned integer:
+                    // +--------+--------+--------+--------+--------+--------+
+                    // |  0xd6  |   -1   |   seconds in 32-bit unsigned int  |
+                    // +--------+--------+--------+--------+--------+--------+
+                    Timestamp::new(i64::from(BigEndian::read_u32(ext.data)), 0)
+                }
+                #[allow(clippy::cast_possible_wrap)]
                 8 => {
+                    // timestamp 64 stores the number of seconds and nanoseconds that have elapsed since 1970-01-01 00:00:00 UTC
+                    // in 32-bit unsigned integers:
+                    // +--------+--------+--------+--------+--------+------|-+--------+--------+--------+--------+
+                    // |  0xd7  |   -1   | nanosec. in 30-bit unsigned int |   seconds in 34-bit unsigned int    |
+                    // +--------+--------+--------+--------+--------+------^-+--------+--------+--------+--------+
                     let value = BigEndian::read_u64(ext.data);
-                    Timestamp::new((value & 0x00000003ffffffffu64) as i64, (value >> 34) as u32)
+                    Timestamp::new((value & 0x0000_0003_ffff_ffff_u64) as i64, (value >> 34) as u32)
                 }
                 #[cfg(feature = "timestamp96")]
                 12 => {
+                    // timestamp 96 stores the number of seconds and nanoseconds that have elapsed since 1970-01-01 00:00:00 UTC
+                    // in 64-bit signed integer and 32-bit unsigned integer:
+                    // +--------+--------+--------+--------+--------+--------+--------+
+                    // |  0xc7  |   12   |   -1   |nanoseconds in 32-bit unsigned int |
+                    // +--------+--------+--------+--------+--------+--------+--------+
+                    // +--------+--------+--------+--------+--------+--------+--------+--------+
+                    // |                   seconds in 64-bit signed int                        |
+                    // +--------+--------+--------+--------+--------+--------+--------+--------+
                     let nanos = BigEndian::read_u32(&ext.data[0..4]);
                     let s = BigEndian::read_i64(&ext.data[4..12]);
                     Timestamp::new(s, nanos)
@@ -168,7 +194,7 @@ impl<'a> From<TimestampRef<'a>> for Timestamp {
     fn from(ts: TimestampRef<'a>) -> Self {
         match ts.ext.try_into() {
             Ok(x) => x,
-            _ => unreachable!(),
+            Err(_) => unreachable!(), // Unreachable, because TimestampRef can only be crated from valid Timestamps
         }
     }
 }

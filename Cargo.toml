@@ -26,6 +26,7 @@ serde_repr = { version = "0.1", default-features = false }
 default = [
     "u64",
     "i64",
+    "bin16",
     "timestamp",
     "serde",
     "serde_bytes",
@@ -35,7 +36,8 @@ std = ["byteorder/std", "num-traits/std", "serde_bytes/std", "serde/std"]
 alloc = ["serde/alloc", "serde_bytes/alloc"]
 u64 = []
 i64 = []
-bin32 = []
+bin16 = []
+bin32 = ["bin16"]
 map32 = []
 array16 = []
 array32 = ["array16"]

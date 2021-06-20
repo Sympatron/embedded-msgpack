@@ -52,7 +52,7 @@ pub(crate) struct Deserializer<'b> {
 }
 
 impl<'a> Deserializer<'a> {
-    pub fn new(slice: &'a [u8]) -> Deserializer<'_> { Deserializer { slice, index: 0 } }
+    pub const fn new(slice: &'a [u8]) -> Deserializer<'_> { Deserializer { slice, index: 0 } }
 
     fn eat_byte(&mut self) { self.index += 1; }
 
@@ -235,7 +235,7 @@ impl fmt::Display for Error {
                 Error::InvalidType => "Unexpected type encountered.",
                 Error::OutOfBounds => "Index out of bounds.",
                 Error::EndOfBuffer => "EOF while parsing.",
-                Error::CustomError => "Did not match deserializer’s expected format.",
+                Error::CustomError => "Did not match deserializer's expected format.",
                 #[cfg(feature = "custom-error-messages")]
                 Error::CustomErrorWithMessage(msg) => msg.as_str(),
                 // _ => "Invalid MessagePack",

@@ -46,6 +46,7 @@ pub enum Marker {
 
 impl Marker {
     /// Construct a msgpack marker from a single byte.
+    #[allow(clippy::cast_possible_wrap)]
     pub const fn from_u8(n: u8) -> Marker {
         match n {
             0x00..=0x7f => Marker::FixPos(n),
@@ -90,9 +91,8 @@ impl Marker {
     }
 
     /// Converts a marker object into a single-byte representation.
-    #[inline(always)]
-    pub const fn to_u8(&self) -> u8 {
-        match *self {
+    pub const fn to_u8(self) -> u8 {
+        match self {
             Marker::FixPos(val) => val,
             Marker::FixNeg(val) => val as u8,
 
@@ -150,7 +150,7 @@ impl From<u8> for Marker {
     fn from(val: u8) -> Marker { Marker::from_u8(val) }
 }
 
-impl Into<u8> for Marker {
+impl From<Marker> for u8 {
     #[inline(always)]
-    fn into(self) -> u8 { self.to_u8() }
+    fn from(val: Marker) -> u8 { val.to_u8() }
 }

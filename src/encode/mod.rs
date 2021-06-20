@@ -4,6 +4,8 @@ pub mod serde;
 use crate::marker::Marker;
 
 use byteorder::{BigEndian, ByteOrder};
+#[allow(unused_imports)]
+use core::convert::TryFrom;
 use core::{convert::From, ops::Deref};
 use num_traits::cast::FromPrimitive;
 
@@ -48,8 +50,8 @@ pub fn serialize_u8(value: u8, buf: &mut [u8]) -> Result<usize, Error> {
     }
 }
 pub fn serialize_u16(value: u16, buf: &mut [u8]) -> Result<usize, Error> {
-    if value <= u8::max_value() as u16 {
-        serialize_u8(value as u8, buf)
+    if let Ok(value) = u8::try_from(value) {
+        serialize_u8(value, buf)
     } else {
         if buf.len() < 3 {
             return Err(Error::EndOfBuffer);
@@ -60,8 +62,8 @@ pub fn serialize_u16(value: u16, buf: &mut [u8]) -> Result<usize, Error> {
     }
 }
 pub fn serialize_u32(value: u32, buf: &mut [u8]) -> Result<usize, Error> {
-    if value <= u16::max_value() as u32 {
-        serialize_u16(value as u16, buf)
+    if let Ok(value) = u16::try_from(value) {
+        serialize_u16(value, buf)
     } else {
         if buf.len() < 5 {
             return Err(Error::EndOfBuffer);
@@ -73,8 +75,8 @@ pub fn serialize_u32(value: u32, buf: &mut [u8]) -> Result<usize, Error> {
 }
 #[cfg(feature = "u64")]
 pub fn serialize_u64(value: u64, buf: &mut [u8]) -> Result<usize, Error> {
-    if value <= u32::max_value() as u64 {
-        serialize_u32(value as u32, buf)
+    if let Ok(value) = u32::try_from(value) {
+        serialize_u32(value, buf)
     } else {
         if buf.len() < 9 {
             return Err(Error::EndOfBuffer);
@@ -84,26 +86,16 @@ pub fn serialize_u64(value: u64, buf: &mut [u8]) -> Result<usize, Error> {
         Ok(9)
     }
 }
+#[allow(clippy::single_match_else)]
 pub fn serialize_i8(value: i8, buf: &mut [u8]) -> Result<usize, Error> {
-    if buf.is_empty() {
-        return Err(Error::EndOfBuffer);
-    }
     match value {
-        -32..=-1 => {
-            buf[0] = Marker::FixNeg(value).to_u8();
+        -32..=0x7f => {
+            if buf.is_empty() {
+                return Err(Error::EndOfBuffer);
+            }
+            buf[0] = value as u8;
             Ok(1)
         }
-        0..=0x7f => {
-            buf[0] = Marker::FixPos(value as u8).to_u8();
-            Ok(1)
-        }
-        // -32..0x7f => {
-        //     if buf.len() < 1 {
-        //         return Err(Error::EndOfBuffer);
-        //     }
-        //     buf[0] = value as u8;
-        //     Ok(1)
-        // }
         _ => {
             if buf.len() < 2 {
                 return Err(Error::EndOfBuffer);
@@ -256,7 +248,7 @@ impl SerializeIntoSlice for () {
 #[cfg_attr(feature = "std", derive(core::fmt::Debug))]
 pub struct Binary<'a>(&'a [u8]);
 impl<'a> Binary<'a> {
-    pub fn new(slice: &'a [u8]) -> Self { Binary(slice) }
+    pub const fn new(slice: &'a [u8]) -> Self { Binary(slice) }
 }
 impl<'a> Deref for Binary<'a> {
     type Target = &'a [u8];
@@ -292,37 +284,36 @@ impl<'a> ::serde::Deserialize<'a> for Binary<'a> {
 impl<'a> SerializeIntoSlice for Binary<'a> {
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> {
         let n = self.len();
-        match n {
-            0..=0xff => {
-                if buf.len() < 2 + n {
-                    return Err(Error::EndOfBuffer);
-                }
-                buf[0] = Marker::Bin8.to_u8();
-                buf[1] = n as u8;
-                buf[2..(2 + n)].clone_from_slice(self);
-                Ok(2 + n)
+        if let Ok(n8) = u8::try_from(n) {
+            if buf.len() < 2 + n {
+                return Err(Error::EndOfBuffer);
             }
-            0x100..=0xffff => {
-                if buf.len() < 3 + n {
-                    return Err(Error::EndOfBuffer);
-                }
-                buf[0] = Marker::Bin16.to_u8();
-                BigEndian::write_u16(&mut buf[1..], n as u16);
-                buf[3..(3 + n)].clone_from_slice(self);
-                Ok(3 + n)
-            }
-            #[cfg(feature = "bin32")]
-            0x10000..=0xffffffff => {
-                if buf.len() < 5 + n {
-                    return Err(Error::EndOfBuffer);
-                }
-                buf[0] = Marker::Bin32.to_u8();
-                BigEndian::write_u32(&mut buf[1..], n as u32);
-                buf[5..(5 + n)].clone_from_slice(self);
-                Ok(5 + n)
-            }
-            _ => unimplemented!(),
+            buf[0] = Marker::Bin8.to_u8();
+            buf[1] = n8;
+            buf[2..(2 + n)].clone_from_slice(self);
+            return Ok(2 + n);
         }
+        #[cfg(feature = "bin16")]
+        if let Ok(n16) = u16::try_from(n) {
+            if buf.len() < 3 + n {
+                return Err(Error::EndOfBuffer);
+            }
+            buf[0] = Marker::Bin16.to_u8();
+            BigEndian::write_u16(&mut buf[1..], n16);
+            buf[3..(3 + n)].clone_from_slice(self);
+            return Ok(3 + n);
+        }
+        #[cfg(feature = "bin32")]
+        if let Ok(n32) = u32::try_from(n) {
+            if buf.len() < 5 + n {
+                return Err(Error::EndOfBuffer);
+            }
+            buf[0] = Marker::Bin32.to_u8();
+            BigEndian::write_u32(&mut buf[1..], n32);
+            buf[5..(5 + n)].clone_from_slice(self);
+            return Ok(5 + n);
+        }
+        unimplemented!()
     }
 }
 
@@ -339,6 +330,7 @@ where
 }
 
 impl SerializeIntoSlice for &str {
+    #[allow(clippy::cast_possible_truncation)]
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> {
         let n = self.len();
         match n {
@@ -362,29 +354,31 @@ impl SerializeIntoSlice for &str {
                 buf[header_len..(header_len + n)].clone_from_slice(self.as_bytes());
                 Ok(header_len + n)
             }
-            #[cfg(feature = "str16")]
-            0x100..=0xffff => {
-                let header_len = 3;
-                if buf.len() < header_len + n {
-                    return Err(Error::EndOfBuffer);
+            _ => {
+                #[cfg(feature = "str16")]
+                if let Ok(n16) = u16::try_from(n) {
+                    let header_len = 3;
+                    if buf.len() < header_len + n {
+                        return Err(Error::EndOfBuffer);
+                    }
+                    buf[0] = Marker::Str16.to_u8();
+                    BigEndian::write_u16(&mut buf[1..], n16);
+                    buf[header_len..(header_len + n)].clone_from_slice(self.as_bytes());
+                    return Ok(header_len + n);
                 }
-                buf[0] = Marker::Str8.to_u8();
-                BigEndian::write_u16(&mut buf[1..], n as u16);
-                buf[header_len..(header_len + n)].clone_from_slice(self.as_bytes());
-                Ok(header_len + n)
-            }
-            #[cfg(feature = "str32")]
-            0x10000..=0xffffffff => {
-                let header_len = 5;
-                if buf.len() < header_len + n {
-                    return Err(Error::EndOfBuffer);
+                #[cfg(feature = "str32")]
+                if let Ok(n32) = u32::try_from(n) {
+                    let header_len = 5;
+                    if buf.len() < header_len + n {
+                        return Err(Error::EndOfBuffer);
+                    }
+                    buf[0] = Marker::Str32.to_u8();
+                    BigEndian::write_u32(&mut buf[1..], n32);
+                    buf[header_len..(header_len + n)].clone_from_slice(self.as_bytes());
+                    return Ok(header_len + n);
                 }
-                buf[0] = Marker::Str8.to_u8();
-                BigEndian::write_u32(&mut buf[1..], n as u32);
-                buf[header_len..(header_len + n)].clone_from_slice(self.as_bytes());
-                Ok(header_len + n)
+                unimplemented!()
             }
-            _ => unimplemented!(),
         }
     }
 }
@@ -395,7 +389,7 @@ where
     V: SerializeIntoSlice,
 {
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> {
-        // serialize_sequence(self, SeuqenceType::Map, buf)
+        // serialize_sequence(self, SequenceType::Map, buf)
         let mut index = serialize_map_start(self.len(), buf)?;
         for kv in self.iter() {
             index += kv.write_into_slice(&mut buf[index..])?;
@@ -408,7 +402,7 @@ impl<T> SerializeIntoSlice for &[T]
 where T: SerializeIntoSlice
 {
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> {
-        // serialize_sequence(self, SeuqenceType::Array, buf)
+        // serialize_sequence(self, SequenceType::Array, buf)
         let mut index = serialize_array_start(self.len(), buf)?;
         for i in self.iter() {
             index += SerializeIntoSlice::write_into_slice(i, &mut buf[index..])?;
@@ -417,20 +411,21 @@ where T: SerializeIntoSlice
     }
 }
 
-pub enum SeuqenceType {
+#[derive(Copy, Clone)]
+pub enum SequenceType {
     Array,
     Map,
 }
-impl SeuqenceType {
-    pub fn serialize_start(&self, n: usize, buf: &mut [u8]) -> Result<usize, Error> {
-        match *self {
-            SeuqenceType::Array => serialize_array_start(n, buf),
-            SeuqenceType::Map => serialize_map_start(n, buf),
+impl SequenceType {
+    pub fn serialize_start(self, n: usize, buf: &mut [u8]) -> Result<usize, Error> {
+        match self {
+            SequenceType::Array => serialize_array_start(n, buf),
+            SequenceType::Map => serialize_map_start(n, buf),
         }
     }
 }
 
-pub fn serialize_sequence<T: SerializeIntoSlice>(seq: &[T], typ: SeuqenceType, buf: &mut [u8]) -> Result<usize, Error> {
+pub fn serialize_sequence<T: SerializeIntoSlice>(seq: &[T], typ: SequenceType, buf: &mut [u8]) -> Result<usize, Error> {
     let mut index = typ.serialize_start(seq.len(), buf)?;
     for i in seq.iter() {
         index += SerializeIntoSlice::write_into_slice(i, &mut buf[index..])?;
@@ -438,6 +433,13 @@ pub fn serialize_sequence<T: SerializeIntoSlice>(seq: &[T], typ: SeuqenceType, b
     Ok(index)
 }
 
+/// # Panics
+///
+/// Will panic under the following conditions:
+///  - feature 'array32' active: `n >= 2^32`
+///  - feature 'array16' active: `n >= 2^16`
+///  - else: `n >= 16`
+#[allow(clippy::cast_possible_truncation)]
 pub fn serialize_array_start(n: usize, buf: &mut [u8]) -> Result<usize, Error> {
     if n <= crate::marker::FIXARRAY_SIZE as usize {
         if buf.len() < 1 + n {
@@ -447,21 +449,28 @@ pub fn serialize_array_start(n: usize, buf: &mut [u8]) -> Result<usize, Error> {
         Ok(1)
     } else {
         #[cfg(feature = "array16")]
-        if n <= u16::max_value() as usize {
+        if let Ok(n) = u16::try_from(n) {
             buf[0] = Marker::Array16.to_u8();
-            BigEndian::write_u16(&mut buf[1..], n as u16);
+            BigEndian::write_u16(&mut buf[1..], n);
             return Ok(3);
         }
         #[cfg(feature = "array32")]
-        if n <= u32::max_value() as usize {
+        if let Ok(n) = u32::try_from(n) {
             buf[0] = Marker::Array32.to_u8();
-            BigEndian::write_u32(&mut buf[1..], n as u32);
+            BigEndian::write_u32(&mut buf[1..], n);
             return Ok(5);
         }
         unimplemented!()
     }
 }
 
+/// # Panics
+///
+/// Will panic under the following conditions:
+///  - feature 'map32' active: `n >= 2^32`
+///  - feature 'map16' active: `n >= 2^16`
+///  - else: `n >= 16`
+#[allow(clippy::cast_possible_truncation)]
 pub fn serialize_map_start(n: usize, buf: &mut [u8]) -> Result<usize, Error> {
     if n <= crate::marker::FIXMAP_SIZE as usize {
         if buf.len() < 1 + n {
@@ -471,15 +480,15 @@ pub fn serialize_map_start(n: usize, buf: &mut [u8]) -> Result<usize, Error> {
         Ok(1)
     } else {
         #[cfg(feature = "map16")]
-        if n <= u16::max_value() as usize {
+        if let Ok(n) = u16::try_from(n) {
             buf[0] = Marker::Map16.to_u8();
-            BigEndian::write_u16(&mut buf[1..], n as u16);
+            BigEndian::write_u16(&mut buf[1..], n);
             return Ok(3);
         }
         #[cfg(feature = "map32")]
-        if n <= u32::max_value() as usize {
+        if let Ok(n) = u32::try_from(n) {
             buf[0] = Marker::Map32.to_u8();
-            BigEndian::write_u32(&mut buf[1..], n as u32);
+            BigEndian::write_u32(&mut buf[1..], n);
             return Ok(5);
         }
         unimplemented!()

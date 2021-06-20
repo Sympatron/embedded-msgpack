@@ -14,46 +14,16 @@ pub struct Ext<'a> {
 }
 
 impl<'a> Ext<'a> {
-    pub fn new(typ: i8, data: &'a [u8]) -> Self { Ext { typ, data } }
+    pub const fn new(typ: i8, data: &'a [u8]) -> Self { Ext { typ, data } }
     #[inline(always)]
-    pub fn get_type(&self) -> i8 { self.typ }
+    pub const fn get_type(&self) -> i8 { self.typ }
     #[inline(always)]
-    pub fn get_data(&self) -> &'a [u8] { self.data }
+    pub const fn get_data(&self) -> &'a [u8] { self.data }
 }
 
 pub fn serialize_ext<'a>(value: &Ext<'a>, buf: &mut [u8]) -> Result<usize, Error> {
     let typ = value.get_type();
     let data = value.get_data();
-
-    // if data.len() > 0 && data.len() <= 16 && data.len().is_power_of_two() {
-    //     if buf.len() < data.len() + 2 {
-    //         return Err(Error::EndOfBuffer);
-    //     }
-    //     let n = data.len().trailing_zeros() as u8;
-    //     buf[0] = Marker::FixExt1.to_u8() + n;
-    //     buf[1] = typ as u8;
-    //     buf[2..data.len() + 2].clone_from_slice(data);
-    //     return Ok(data.len() + 2);
-    // }
-    // let z = data.len().leading_zeros() as u8;
-    // let s = core::mem::size_of::<usize>() as u8;
-    // let mut min_bits = s - z;
-    // if min_bits > 32 {
-    //     return Err(Error::OutOfBounds);
-    // } else if min_bits == 0 {
-    //     min_bits = 1;
-    // }
-    // let bits = 1u8 << (8 - (min_bits - 1).leading_zeros());
-    // let bytes = bits / 8;
-    // let header_len = (2 + bytes) as usize;
-    // if buf.len() < data.len() + 2 {
-    //     return Err(Error::EndOfBuffer);
-    // }
-    // buf[0] = Marker::Ext8.to_u8();
-    // BigEndian::write_uint(&mut buf[1..], data.len() as u64, header_len - 2);
-    // buf[header_len - 1] = typ as u8;
-    // buf[header_len..data.len() + header_len].clone_from_slice(data);
-    // return Ok(data.len() + header_len);
 
     let (marker, header_len) = match data.len() {
         #[cfg(feature = "fixext")]
@@ -103,7 +73,7 @@ pub fn serialize_ext<'a>(value: &Ext<'a>, buf: &mut [u8]) -> Result<usize, Error
             (Marker::Ext16.to_u8(), header_len)
         }
         #[cfg(feature = "ext32")]
-        0x10000..=0xffffffff => {
+        0x1_0000..=0xffff_ffff => {
             let header_len = 6;
             // if buf.len() < data.len() + header_len {
             //     return Err(Error::EndOfBuffer);

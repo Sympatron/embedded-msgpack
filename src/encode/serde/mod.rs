@@ -18,6 +18,7 @@ pub(crate) struct Serializer<'a> {
 
 impl<'a> Serializer<'a> {
     fn new(buf: &'a mut [u8]) -> Self { Serializer { buf, pos: 0 } }
+    #[allow(clippy::clippy::needless_pass_by_value)]
     fn append<S: SerializeIntoSlice>(&mut self, value: S) -> Result<(), Error> {
         self.pos += value.write_into_slice(&mut self.buf[self.pos..])?;
         Ok(())
@@ -92,7 +93,7 @@ impl<'a, 'b> ser::Serializer for &'a mut Serializer<'b> {
         self.serialize_str(variant)
     }
 
-    fn serialize_newtype_struct<T: ?Sized + ::serde::Serialize>(self, _name: &'static str, v: &T) -> Result<Self::Ok, Self::Error>
+    fn serialize_newtype_struct<T: ?Sized>(self, _name: &'static str, v: &T) -> Result<Self::Ok, Self::Error>
     where T: ser::Serialize {
         v.serialize(self)
     }
@@ -156,7 +157,7 @@ impl<'a, 'b> ser::Serializer for &'a mut Serializer<'b> {
 }
 
 /// Serializes the given data structure as a JSON byte vector
-pub fn to_array<'a, T>(value: &T, buf: &'a mut [u8]) -> Result<usize, Error>
+pub fn to_array<T>(value: &T, buf: &mut [u8]) -> Result<usize, Error>
 where T: ser::Serialize + ?Sized {
     let mut ser = Serializer::new(buf);
     value.serialize(&mut ser)?;

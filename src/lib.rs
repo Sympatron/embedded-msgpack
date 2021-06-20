@@ -1,4 +1,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
+#![warn(clippy::unreadable_literal)]
+#![warn(clippy::option_if_let_else)]
+#![warn(clippy::missing_const_for_fn)]
+#![warn(clippy::missing_panics_doc)]
 
 extern crate zerocopy;
 
