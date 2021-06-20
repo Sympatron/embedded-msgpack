@@ -14,7 +14,7 @@ pub enum Error {
     InvalidType,
     CustomError,
     #[cfg(feature = "custom-error-messages")]
-    CustomErrorWithMessage(heapless::String),
+    CustomErrorWithMessage(heapless::String<64>),
 }
 
 #[cfg(feature = "serde")]
