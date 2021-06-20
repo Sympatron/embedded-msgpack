@@ -7,10 +7,18 @@ use byteorder::{BigEndian, ByteOrder};
 use num_traits::cast::FromPrimitive;
 use zerocopy::ByteSlice;
 
+/// Error type indicating why deserialization failed
 #[derive(Debug)]
 pub enum Error {
+    /// End of buffer was reached, before object was deserialized.
     EndOfBuffer,
+    /// Value was out of bounds. This can happen if for example a `u32` value is deserialized into `u16`.
+    ///
+    /// # Examples
+    ///
+    /// `[0xcd, 0x12, 0x34]` deserializes to `0x1234`. If you try to serialize into `u8`, this error will occur.
     OutOfBounds,
+    /// Happens if the data type does not match the expected type.
     InvalidType,
     CustomError,
     #[cfg(feature = "custom-error-messages")]

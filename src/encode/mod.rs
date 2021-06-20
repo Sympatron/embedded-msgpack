@@ -9,11 +9,15 @@ use core::convert::TryFrom;
 use core::{convert::From, ops::Deref};
 use num_traits::cast::FromPrimitive;
 
+/// Error type indicating why serialization failed
 #[derive(Debug)]
 pub enum Error {
-    OutOfBounds,
-    InvalidType,
+    /// End of buffer was reached, before object could be serialized.
     EndOfBuffer,
+    /// Value was out of bounds.
+    OutOfBounds,
+    /// Happens if the data type can not be serialized. For example if a sequence is not sized.
+    InvalidType,
 }
 
 impl ::core::fmt::Display for Error {
@@ -281,6 +285,12 @@ impl<'a> ::serde::Deserialize<'a> for Binary<'a> {
     }
 }
 
+/// # Panics
+///
+/// Will panic under the following conditions:
+///  - feature 'bin32' active: `n >= 2^32`
+///  - feature 'bin16' active: `n >= 2^16`
+///  - else: `n >= 2^8`
 impl<'a> SerializeIntoSlice for Binary<'a> {
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> {
         let n = self.len();
@@ -329,6 +339,12 @@ where
     }
 }
 
+/// # Panics
+///
+/// Will panic under the following conditions:
+///  - feature 'str32' active: `n >= 2^32`
+///  - feature 'str16' active: `n >= 2^16`
+///  - else: `n >= 2^8`
 impl SerializeIntoSlice for &str {
     #[allow(clippy::cast_possible_truncation)]
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> {

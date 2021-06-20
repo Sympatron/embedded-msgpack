@@ -238,7 +238,6 @@ impl fmt::Display for Error {
                 Error::CustomError => "Did not match deserializer's expected format.",
                 #[cfg(feature = "custom-error-messages")]
                 Error::CustomErrorWithMessage(msg) => msg.as_str(),
-                // _ => "Invalid MessagePack",
             }
         )
     }
