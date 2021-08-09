@@ -13,7 +13,7 @@ use super::Error;
 
 type Result<T> = core::result::Result<T, Error>;
 
-#[cfg(debug_assertions)]
+#[cfg(test)]
 fn print_debug<T>(prefix: &str, function_name: &str, de: &Deserializer) {
     #[cfg(not(feature = "std"))]
     extern crate std;
@@ -27,7 +27,7 @@ fn print_debug<T>(prefix: &str, function_name: &str, de: &Deserializer) {
         &de.slice[de.index..core::cmp::min(de.slice.len(), de.index + 10)]
     );
 }
-#[cfg(debug_assertions)]
+#[cfg(test)]
 fn print_debug_value<T, V: core::fmt::Debug>(function_name: &str, de: &Deserializer, value: &V) {
     #[cfg(not(feature = "std"))]
     extern crate std;
@@ -41,9 +41,9 @@ fn print_debug_value<T, V: core::fmt::Debug>(function_name: &str, de: &Deseriali
         &de.slice[de.index..core::cmp::min(de.slice.len(), de.index + 10)]
     );
 }
-#[cfg(not(debug_assertions))]
+#[cfg(not(test))]
 fn print_debug<T>(_prefix: &str, _function_name: &str, _de: &Deserializer) {}
-#[cfg(not(debug_assertions))]
+#[cfg(not(test))]
 fn print_debug_value<T, V: core::fmt::Debug>(_function_name: &str, _de: &Deserializer, _value: &V) {}
 
 pub(crate) struct Deserializer<'b> {
