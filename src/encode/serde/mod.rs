@@ -58,7 +58,7 @@ impl<'a, 'b> ser::Serializer for &'a mut Serializer<'b> {
     #[cfg(feature = "u64")]
     fn serialize_u64(self, v: u64) -> Result<Self::Ok, Self::Error> { self.append(v) }
     #[cfg(not(feature = "u64"))]
-    fn serialize_i64(self, _v: u64) -> Result<Self::Ok, Self::Error> { unimplemented!() }
+    fn serialize_u64(self, _v: u64) -> Result<Self::Ok, Self::Error> { unimplemented!() }
     fn serialize_f32(self, v: f32) -> Result<Self::Ok, Self::Error> { self.append(v) }
     fn serialize_f64(self, v: f64) -> Result<Self::Ok, Self::Error> { self.append(v) }
 
