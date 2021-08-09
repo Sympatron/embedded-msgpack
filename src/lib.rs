@@ -14,4 +14,5 @@ mod marker;
 
 #[cfg(feature = "ext")]
 pub use ext::*;
+#[cfg(feature = "serde_bytes")]
 pub use serde_bytes::Bytes;
