@@ -20,7 +20,7 @@ fn print_debug<T>(prefix: &str, function_name: &str, de: &Deserializer) {
     #[cfg(not(feature = "std"))]
     use std::println;
     println!(
-        "{}{}<{}> ({:?})",
+        "{}{}<{}> ({:02x?})",
         prefix,
         function_name,
         core::any::type_name::<T>(),
@@ -34,7 +34,7 @@ fn print_debug_value<T, V: core::fmt::Debug>(function_name: &str, de: &Deseriali
     #[cfg(not(feature = "std"))]
     use std::println;
     println!(
-        "{}<{}> => {:?}   ({:?})",
+        "{}<{}> => {:?}   ({:02x?})",
         function_name,
         core::any::type_name::<T>(),
         value,
