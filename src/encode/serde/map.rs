@@ -1,8 +1,5 @@
-use serde::ser;
-
-// use heapless::ArrayLength;
-
 use super::{Error, Serializer};
+use serde::ser;
 
 pub struct SerializeMap<'a, 'b> {
     ser: &'a mut Serializer<'b>,
