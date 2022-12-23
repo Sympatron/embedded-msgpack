@@ -248,10 +248,26 @@ impl SerializeIntoSlice for () {
     fn write_into_slice(&self, _buf: &mut [u8]) -> Result<usize, Error> { Ok(0) }
 }
 
+#[cfg(any(feature = "alloc", feature = "std"))]
+extern crate alloc;
+#[cfg(any(feature = "alloc", feature = "std"))]
+use alloc::borrow::Cow;
+
 #[repr(transparent)]
-pub struct Binary<'a>(&'a [u8]);
+#[derive(PartialEq, Eq)]
+#[cfg_attr(any(test, feature = "debug-impls"), derive(core::fmt::Debug))]
+pub struct Binary<'a>(
+    #[cfg(not(any(feature = "alloc", feature = "std")))] &'a [u8],
+    #[cfg(any(feature = "alloc", feature = "std"))] Cow<'a, [u8]>,
+);
+
 impl<'a> Binary<'a> {
+    #[cfg(not(any(feature = "alloc", feature = "std")))]
+    #[inline]
     pub const fn new(slice: &'a [u8]) -> Self { Binary(slice) }
+    #[cfg(any(feature = "alloc", feature = "std"))]
+    #[inline]
+    pub const fn new(slice: &'a [u8]) -> Self { Binary(Cow::Borrowed(slice)) }
 }
 
 impl<'a> core::fmt::Debug for Binary<'a> {
@@ -260,18 +276,21 @@ impl<'a> core::fmt::Debug for Binary<'a> {
 
 impl<'a> Deref for Binary<'a> {
     type Target = &'a [u8];
+    #[cfg(not(any(feature = "alloc", feature = "std")))]
+    #[inline]
+    fn deref(&self) -> &Self::Target { &self.0 }
+    #[cfg(any(feature = "alloc", feature = "std"))]
+    #[inline]
     fn deref(&self) -> &Self::Target { &self.0 }
 }
 impl<'a> From<&'a [u8]> for Binary<'a> {
-    fn from(slice: &'a [u8]) -> Self { Binary(slice) }
-}
-impl<'a> PartialEq for Binary<'a> {
-    fn eq(&self, other: &Binary<'a>) -> bool { self.0 == other.0 }
+    #[inline]
+    fn from(slice: &'a [u8]) -> Self { Binary::new(slice) }
 }
 
 #[cfg(feature = "serde")]
 impl<'a> ::serde::Serialize for Binary<'a> {
-    fn serialize<S: ::serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> { serializer.serialize_bytes(self.0) }
+    fn serialize<S: ::serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> { serializer.serialize_bytes(&self) }
 }
 #[cfg(feature = "serde")]
 struct BinaryVisitor;
@@ -281,6 +300,22 @@ impl<'de> ::serde::de::Visitor<'de> for BinaryVisitor {
     type Value = Binary<'de>;
     fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result { formatter.write_str("a byte array") }
     fn visit_borrowed_bytes<E: ::serde::de::Error>(self, v: &'de [u8]) -> Result<Self::Value, E> { Ok(Binary::new(v)) }
+    #[cfg(any(feature = "alloc", feature = "std"))]
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+    where A: ::serde::de::SeqAccess<'de> {
+        extern crate alloc;
+        #[cfg(not(feature = "std"))]
+        use alloc::vec::Vec;
+        let mut data = if let Some(len) = seq.size_hint() {
+            Vec::with_capacity(len)
+        } else {
+            Vec::new()
+        };
+        while let Some(e) = seq.next_element::<u8>()? {
+            data.push(e);
+        }
+        Ok(Binary(Cow::Owned(data)))
+    }
 }
 #[cfg(feature = "serde")]
 impl<'a> ::serde::Deserialize<'a> for Binary<'a> {
