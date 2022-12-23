@@ -12,7 +12,9 @@ pub mod encode;
 pub mod ext;
 mod marker;
 
+#[cfg(feature = "timestamp")]
+pub use ext::timestamp;
 #[cfg(feature = "ext")]
-pub use ext::*;
+pub use ext::Ext;
 #[cfg(feature = "serde_bytes")]
 pub use serde_bytes::Bytes;
