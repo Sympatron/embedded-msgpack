@@ -1,7 +1,9 @@
+mod encode;
+
 #[cfg(feature = "serde")]
 mod decode;
-mod encode;
 #[cfg(feature = "serde")]
-mod fuzzing;
+mod fuzzing;#[cfg(feature = "serde")]
+mod interop;
 #[cfg(feature = "serde")]
 mod roundtrip;
