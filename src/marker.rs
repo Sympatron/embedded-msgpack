@@ -3,6 +3,7 @@ pub const FIXARRAY_SIZE: u8 = 0x0f;
 pub const FIXMAP_SIZE: u8 = 0x0f;
 
 /// Format markers.
+#[repr(u8)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Marker {
     FixPos(u8),
