@@ -49,84 +49,84 @@ fn encode_bool() {
 #[test]
 fn encode_timestamp() {
     use embedded_msgpack::timestamp::Timestamp;
-    test_encode_direct(&Timestamp::new(1514862245, 0).unwrap(), &[0xd6, 0xff, 0x5a, 0x4a, 0xf6, 0xa5]);
-    test_encode_direct(
-        &Timestamp::new(1514862245, 678901234).unwrap(),
+    test_encode(Timestamp::new(1514862245, 0).unwrap(), &[0xd6, 0xff, 0x5a, 0x4a, 0xf6, 0xa5]);
+    test_encode(
+        Timestamp::new(1514862245, 678901234).unwrap(),
         &[0xd7, 0xff, 0xa1, 0xdc, 0xd7, 0xc8, 0x5a, 0x4a, 0xf6, 0xa5],
     );
-    test_encode_direct(
-        &Timestamp::new(2147483647, 999999999).unwrap(),
+    test_encode(
+        Timestamp::new(2147483647, 999999999).unwrap(),
         &[0xd7, 0xff, 0xee, 0x6b, 0x27, 0xfc, 0x7f, 0xff, 0xff, 0xff],
     );
-    test_encode_direct(&Timestamp::new(2147483648, 0).unwrap(), &[0xd6, 0xff, 0x80, 0x00, 0x00, 0x00]);
-    test_encode_direct(
-        &Timestamp::new(2147483648, 1).unwrap(),
+    test_encode(Timestamp::new(2147483648, 0).unwrap(), &[0xd6, 0xff, 0x80, 0x00, 0x00, 0x00]);
+    test_encode(
+        Timestamp::new(2147483648, 1).unwrap(),
         &[0xd7, 0xff, 0x00, 0x00, 0x00, 0x04, 0x80, 0x00, 0x00, 0x00],
     );
-    test_encode_direct(&Timestamp::new(4294967295, 0).unwrap(), &[0xd6, 0xff, 0xff, 0xff, 0xff, 0xff]);
-    test_encode_direct(
-        &Timestamp::new(4294967295, 999999999).unwrap(),
+    test_encode(Timestamp::new(4294967295, 0).unwrap(), &[0xd6, 0xff, 0xff, 0xff, 0xff, 0xff]);
+    test_encode(
+        Timestamp::new(4294967295, 999999999).unwrap(),
         &[0xd7, 0xff, 0xee, 0x6b, 0x27, 0xfc, 0xff, 0xff, 0xff, 0xff],
     );
-    test_encode_direct(
-        &Timestamp::new(4294967296, 0).unwrap(),
+    test_encode(
+        Timestamp::new(4294967296, 0).unwrap(),
         &[0xd7, 0xff, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00],
     );
-    test_encode_direct(
-        &Timestamp::new(17179869183, 999999999).unwrap(),
+    test_encode(
+        Timestamp::new(17179869183, 999999999).unwrap(),
         &[0xd7, 0xff, 0xee, 0x6b, 0x27, 0xff, 0xff, 0xff, 0xff, 0xff],
     );
     #[cfg(feature = "timestamp96")]
-    test_encode_direct(
-        &Timestamp::new(17179869184, 0).unwrap(),
+    test_encode(
+        Timestamp::new(17179869184, 0).unwrap(),
         &[
             0xc7, 0x0c, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00,
         ],
     );
     #[cfg(feature = "timestamp96")]
-    test_encode_direct(
-        &Timestamp::new(-1, 0).unwrap(),
+    test_encode(
+        Timestamp::new(-1, 0).unwrap(),
         &[
             0xc7, 0x0c, 0xff, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
         ],
     );
     #[cfg(feature = "timestamp96")]
-    test_encode_direct(
-        &Timestamp::new(-1, 999999999).unwrap(),
+    test_encode(
+        Timestamp::new(-1, 999999999).unwrap(),
         &[
             0xc7, 0x0c, 0xff, 0x3b, 0x9a, 0xc9, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
         ],
     );
-    test_encode_direct(&Timestamp::new(0, 0).unwrap(), &[0xd6, 0xff, 0x00, 0x00, 0x00, 0x00]);
-    test_encode_direct(
-        &Timestamp::new(0, 1).unwrap(),
+    test_encode(Timestamp::new(0, 0).unwrap(), &[0xd6, 0xff, 0x00, 0x00, 0x00, 0x00]);
+    test_encode(
+        Timestamp::new(0, 1).unwrap(),
         &[0xd7, 0xff, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00],
     );
-    test_encode_direct(&Timestamp::new(1, 0).unwrap(), &[0xd6, 0xff, 0x00, 0x00, 0x00, 0x01]);
+    test_encode(Timestamp::new(1, 0).unwrap(), &[0xd6, 0xff, 0x00, 0x00, 0x00, 0x01]);
     #[cfg(feature = "timestamp96")]
-    test_encode_direct(
-        &Timestamp::new(-2208988801, 999999999).unwrap(),
+    test_encode(
+        Timestamp::new(-2208988801, 999999999).unwrap(),
         &[
             0xc7, 0x0c, 0xff, 0x3b, 0x9a, 0xc9, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7c, 0x55, 0x81, 0x7f,
         ],
     );
     #[cfg(feature = "timestamp96")]
-    test_encode_direct(
-        &Timestamp::new(-2208988800, 0).unwrap(),
+    test_encode(
+        Timestamp::new(-2208988800, 0).unwrap(),
         &[
             0xc7, 0x0c, 0xff, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0x7c, 0x55, 0x81, 0x80,
         ],
     );
     #[cfg(feature = "timestamp96")]
-    test_encode_direct(
-        &Timestamp::new(-62167219200, 0).unwrap(),
+    test_encode(
+        Timestamp::new(-62167219200, 0).unwrap(),
         &[
             0xc7, 0x0c, 0xff, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xf1, 0x86, 0x8b, 0x84, 0x00,
         ],
     );
     #[cfg(feature = "timestamp96")]
-    test_encode_direct(
-        &Timestamp::new(253402300799, 999999999).unwrap(),
+    test_encode(
+        Timestamp::new(253402300799, 999999999).unwrap(),
         &[
             0xc7, 0x0c, 0xff, 0x3b, 0x9a, 0xc9, 0xff, 0x00, 0x00, 0x00, 0x3a, 0xff, 0xf4, 0x41, 0x7f,
         ],
