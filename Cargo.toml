@@ -18,7 +18,9 @@ features = ["compliant"]
 num-traits = { version = "0.2", default-features = false }
 byteorder = { version = "1", default-features = false }
 zerocopy = { version = "0.5", default-features = false }
-serde = { version = "1.0", default-features = false, optional = true, features = ["derive"] }
+serde = { version = "1.0", default-features = false, optional = true, features = [
+    "derive"
+] }
 serde_bytes = { version = "0.11", default-features = false, optional = true }
 paste = "1.0"
 heapless = { version = "0.7", default-features = false, optional = true }
@@ -27,15 +29,7 @@ heapless = { version = "0.7", default-features = false, optional = true }
 serde_repr = { version = "0.1", default-features = false }
 
 [features]
-default = [
-    "u64",
-    "i64",
-    "bin16",
-    "timestamp",
-    "serde",
-    "serde_bytes",
-    "ext8",
-]
+default = ["u64", "i64", "bin16", "timestamp", "serde", "serde_bytes", "ext8"]
 std = ["byteorder/std", "num-traits/std", "serde_bytes/std", "serde/std"]
 alloc = ["serde/alloc", "serde_bytes/alloc"]
 u64 = []

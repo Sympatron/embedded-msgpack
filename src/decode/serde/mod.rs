@@ -27,6 +27,7 @@ fn print_debug<T>(prefix: &str, function_name: &str, de: &Deserializer) {
         &de.slice[de.index..core::cmp::min(de.slice.len(), de.index + 10)]
     );
 }
+
 #[cfg(test)]
 fn print_debug_value<T, V: core::fmt::Debug>(function_name: &str, de: &Deserializer, value: &V) {
     #[cfg(not(feature = "std"))]
@@ -198,10 +199,9 @@ impl<'a, 'de> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         visitor.visit_newtype_struct(self)
     }
 
-    /// Unsupported. String is not available in no-std.
-    fn deserialize_string<V: Visitor<'de>>(self, _visitor: V) -> Result<V::Value> {
+    fn deserialize_string<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value> {
         print_debug::<V>("Deserializer::deserialize_", "string", &self);
-        unreachable!()
+        self.deserialize_str(visitor)
     }
 }
 
@@ -238,6 +238,13 @@ impl fmt::Display for Error {
                 Error::CustomError => "Did not match deserializer's expected format.",
                 #[cfg(feature = "custom-error-messages")]
                 Error::CustomErrorWithMessage(msg) => msg.as_str(),
+                Error::NotAscii => "String contains non-ascii chars.",
+                Error::InvalidBoolean => "Invalid boolean marker.",
+                Error::InvalidBinType => "Invalid binary marker.",
+                Error::InvalidStringType => "Invalid string marker.",
+                Error::InvalidArrayType => "Invalid array marker.",
+                Error::InvalidMapType => "Invalid map marker.",
+                Error::InvalidNewTypeLength => "Invalid array length for newtype.",
             }
         )
     }

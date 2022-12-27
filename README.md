@@ -5,6 +5,14 @@
 
 MessagePack serialization implementation for Rust optimized for embedded environments
 
+## Running tests
+
+You can run tests for all common supported configurations via `just test` if you have [`just`](https://github.com/casey/just) installed:
+
+```sh
+just test
+```
+
 ## License
 
 Licensed under either of

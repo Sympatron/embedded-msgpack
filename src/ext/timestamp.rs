@@ -12,11 +12,19 @@ use serde::{Deserialize, Serialize};
 const EXT_TIMESTAMP: i8 = -1;
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq)]
-#[cfg_attr(feature = "std", derive(Debug))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Timestamp {
     seconds: i64,
     nanoseconds: u32,
+}
+
+impl core::fmt::Debug for Timestamp {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Timestamp")
+            .field("seconds", &self.seconds)
+            .field("nanoseconds", &self.nanoseconds)
+            .finish()
+    }
 }
 
 impl Timestamp {

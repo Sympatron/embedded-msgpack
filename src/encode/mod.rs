@@ -249,11 +249,15 @@ impl SerializeIntoSlice for () {
 }
 
 #[repr(transparent)]
-#[cfg_attr(feature = "std", derive(core::fmt::Debug))]
 pub struct Binary<'a>(&'a [u8]);
 impl<'a> Binary<'a> {
     pub const fn new(slice: &'a [u8]) -> Self { Binary(slice) }
 }
+
+impl<'a> core::fmt::Debug for Binary<'a> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result { f.debug_tuple("Binary").field(&self.0).finish() }
+}
+
 impl<'a> Deref for Binary<'a> {
     type Target = &'a [u8];
     fn deref(&self) -> &Self::Target { &self.0 }
