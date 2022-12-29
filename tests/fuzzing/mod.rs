@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 struct FuzzTest1 {
     i: i32,
 }
-#[test]}
+#[test]
 fn decode_fuzz1() { let _: Result<FuzzTest1, _> = embedded_msgpack::decode::from_slice(&[133, 217, 0, 201, 136, 210]); }
 #[test]
 fn decode_fuzz2() {

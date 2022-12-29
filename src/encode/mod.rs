@@ -253,9 +253,9 @@ extern crate alloc;
 #[cfg(any(feature = "alloc", feature = "std"))]
 use alloc::borrow::Cow;
 
-#[repr(transparent)]
 #[derive(PartialEq, Eq)]
 #[cfg_attr(any(test, feature = "debug-impls"), derive(core::fmt::Debug))]
+#[repr(transparent)]
 pub struct Binary<'a>(
     #[cfg(not(any(feature = "alloc", feature = "std")))] &'a [u8],
     #[cfg(any(feature = "alloc", feature = "std"))] Cow<'a, [u8]>,
@@ -270,12 +270,8 @@ impl<'a> Binary<'a> {
     pub const fn new(slice: &'a [u8]) -> Self { Binary(Cow::Borrowed(slice)) }
 }
 
-impl<'a> core::fmt::Debug for Binary<'a> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result { f.debug_tuple("Binary").field(&self.0).finish() }
-}
-
 impl<'a> Deref for Binary<'a> {
-    type Target = &'a [u8];
+    type Target = [u8];
     #[cfg(not(any(feature = "alloc", feature = "std")))]
     #[inline]
     fn deref(&self) -> &Self::Target { &self.0 }
