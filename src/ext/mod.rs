@@ -70,7 +70,7 @@ pub(crate) fn get_ext_start(data_len: usize) -> Result<(Marker, usize), Error> {
         #[cfg(feature = "ext8")]
         0..=0xff => (Marker::Ext8, 3),
         #[cfg(feature = "ext16")]
-        0x1_0000..=0xffff => (Marker::Ext16, 4),
+        0x100..=0xffff => (Marker::Ext16, 4),
         #[cfg(feature = "ext32")]
         0x1_0000..=0xffff_ffff => (Marker::Ext32, 6),
         _ => return Err(Error::OutOfBounds),
