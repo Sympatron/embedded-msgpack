@@ -254,7 +254,7 @@ extern crate alloc;
 use alloc::borrow::Cow;
 
 #[derive(PartialEq, Eq)]
-#[cfg_attr(any(test, feature = "debug-impls"), derive(core::fmt::Debug))]
+#[cfg_attr(any(test, feature = "derive-debug"), derive(core::fmt::Debug))]
 #[repr(transparent)]
 pub struct Binary<'a>(
     #[cfg(not(any(feature = "alloc", feature = "std")))] &'a [u8],

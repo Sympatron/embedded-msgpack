@@ -11,7 +11,7 @@ use serde::{ser::SerializeStruct, Deserialize, Serialize};
 
 #[repr(transparent)]
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-#[cfg_attr(any(test, feature = "debug-impls"), derive(core::fmt::Debug))]
+#[cfg_attr(any(test, feature = "derive-debug"), derive(core::fmt::Debug))]
 #[serde(transparent)]
 struct ExtType(i8);
 
@@ -26,7 +26,7 @@ impl Display for ExtType {
 }
 
 #[derive(PartialEq, Eq)]
-#[cfg_attr(any(test, feature = "debug-impls"), derive(core::fmt::Debug))]
+#[cfg_attr(any(test, feature = "derive-debug"), derive(core::fmt::Debug))]
 pub struct Ext<'a> {
     typ: ExtType,
     data: Binary<'a>,

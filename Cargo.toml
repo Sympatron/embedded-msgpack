@@ -29,7 +29,7 @@ serde_json = { version = "1.0", default-features = false, features = ["std"] }
 
 [features]
 default = ["u64", "i64", "bin16", "timestamp", "serde", "serde_bytes", "ext8"]
-std = ["byteorder/std", "num-traits/std", "serde_bytes/std", "serde/std", "debug-impls"]
+std = ["byteorder/std", "num-traits/std", "serde_bytes/std", "serde/std", "derive-debug"]
 alloc = ["serde/alloc", "serde_bytes/alloc"]
 u64 = []
 i64 = []
@@ -63,4 +63,4 @@ compliant = [
     "timestamp96",
 ]
 "custom-error-messages" = ["heapless"]
-"debug-impls" = []
+"derive-debug" = []

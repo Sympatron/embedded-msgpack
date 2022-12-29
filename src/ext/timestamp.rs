@@ -14,7 +14,7 @@ pub(crate) const FIELD_SECONDS_NAME: &'static str = "seconds";
 pub(crate) const FIELD_NANOSECONDS_NAME: &'static str = "nanoseconds";
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq)]
-#[cfg_attr(any(test, feature = "debug-impls"), derive(core::fmt::Debug))]
+#[cfg_attr(any(test, feature = "derive-debug"), derive(core::fmt::Debug))]
 pub struct Timestamp {
     seconds: i64,
     nanoseconds: u32,

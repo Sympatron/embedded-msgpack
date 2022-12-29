@@ -7,19 +7,19 @@ test:
   just test-compliant
 
 test-default:
-  cargo test --features=debug-impls
+  cargo test --features=derive-debug
 
 test-std:
   cargo test --features=std
 
 test-no-default:
-  cargo test --features=debug-impls --no-default-features
+  cargo test --features=derive-debug --no-default-features
 
 test-alloc:
-  cargo test --features=debug-impls,alloc
+  cargo test --features=derive-debug,alloc
 
 test-compliant:
-  cargo test --features=debug-impls,compliant
+  cargo test --features=derive-debug,compliant
 
 fmt:
   cargo +nightly fmt
