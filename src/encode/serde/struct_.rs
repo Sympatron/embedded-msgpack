@@ -171,4 +171,9 @@ impl<'a> ::serde::ser::Serializer for &'a mut TimestampSerializer {
     ) -> Result<Self::SerializeStructVariant, Self::Error> {
         unreachable!()
     }
+    #[cfg(not(any(feature = "std", feature = "alloc")))]
+    fn collect_str<T: ?Sized>(self, _value: &T) -> Result<Self::Ok, Self::Error>
+    where T: core::fmt::Display {
+        unreachable!()
+    }
 }

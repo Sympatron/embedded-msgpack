@@ -21,5 +21,8 @@ test-alloc:
 test-compliant:
   cargo test --features=derive-debug,compliant
 
+fuzz:
+  cargo +nightly fuzz run decode_from_slice -- -max_total_time=300
+
 fmt:
   cargo +nightly fmt
