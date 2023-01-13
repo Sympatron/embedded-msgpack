@@ -109,9 +109,9 @@ impl<'a, 'b> ::serde::ser::Serializer for &'a mut Serializer<'b> {
         v.serialize(self)
     }
 
-    fn serialize_unit(self) -> Result<Self::Ok, Self::Error> { unreachable!() }
+    fn serialize_unit(self) -> Result<Self::Ok, Self::Error> { unimplemented!() }
 
-    fn serialize_unit_struct(self, _name: &'static str) -> Result<Self::Ok, Self::Error> { unreachable!() }
+    fn serialize_unit_struct(self, _name: &'static str) -> Result<Self::Ok, Self::Error> { unimplemented!() }
 
     fn serialize_unit_variant(self, _name: &'static str, _variant_index: u32, variant: &'static str) -> Result<Self::Ok, Self::Error> {
         self.serialize_str(variant)
@@ -132,7 +132,7 @@ impl<'a, 'b> ::serde::ser::Serializer for &'a mut Serializer<'b> {
     where
         T: ::serde::ser::Serialize,
     {
-        unreachable!()
+        unimplemented!()
     }
 
     fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
@@ -142,7 +142,7 @@ impl<'a, 'b> ::serde::ser::Serializer for &'a mut Serializer<'b> {
 
     fn serialize_tuple(self, len: usize) -> Result<Self::SerializeTuple, Self::Error> { self.serialize_seq(Some(len)) }
 
-    fn serialize_tuple_struct(self, _name: &'static str, _len: usize) -> Result<Self::SerializeTupleStruct, Self::Error> { unreachable!() }
+    fn serialize_tuple_struct(self, _name: &'static str, _len: usize) -> Result<Self::SerializeTupleStruct, Self::Error> { unimplemented!() }
 
     fn serialize_tuple_variant(
         self,
@@ -185,12 +185,12 @@ impl<'a, 'b> ::serde::ser::Serializer for &'a mut Serializer<'b> {
         _variant: &'static str,
         _len: usize,
     ) -> Result<Self::SerializeStructVariant, Self::Error> {
-        unreachable!()
+        unimplemented!()
     }
 
     fn collect_str<T: ?Sized>(self, _value: &T) -> Result<Self::Ok, Self::Error>
     where T: core::fmt::Display {
-        unreachable!()
+        unimplemented!()
     }
 }
 
@@ -205,7 +205,7 @@ where T: ::serde::ser::Serialize + ?Sized {
 impl ::serde::ser::Error for Error {
     fn custom<T>(_msg: T) -> Self
     where T: core::fmt::Display {
-        unreachable!()
+        unimplemented!()
     }
 }
 
