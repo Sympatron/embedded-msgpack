@@ -142,7 +142,9 @@ impl<'a, 'b> ::serde::ser::Serializer for &'a mut Serializer<'b> {
 
     fn serialize_tuple(self, len: usize) -> Result<Self::SerializeTuple, Self::Error> { self.serialize_seq(Some(len)) }
 
-    fn serialize_tuple_struct(self, _name: &'static str, _len: usize) -> Result<Self::SerializeTupleStruct, Self::Error> { unimplemented!() }
+    fn serialize_tuple_struct(self, _name: &'static str, _len: usize) -> Result<Self::SerializeTupleStruct, Self::Error> {
+        unimplemented!()
+    }
 
     fn serialize_tuple_variant(
         self,

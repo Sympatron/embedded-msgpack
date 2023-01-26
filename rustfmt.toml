@@ -9,4 +9,4 @@ max_width = 140
 imports_granularity = "Crate"
 # overflow_delimited_expr = true
 where_single_line = true
-newline_style = "Windows"
+newline_style = "Unix"
