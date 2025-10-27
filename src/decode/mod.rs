@@ -5,7 +5,7 @@ use crate::marker::Marker;
 
 use byteorder::{BigEndian, ByteOrder};
 use num_traits::cast::FromPrimitive;
-use zerocopy::ByteSlice;
+use zerocopy::SplitByteSlice;
 
 /// Error type indicating why deserialization failed
 #[derive(Debug)]
@@ -102,29 +102,22 @@ impl DeserializeFromSlice for Option<i64> {
     }
 }
 
-pub fn read_raw_u8(buf: &[u8]) -> Result<(u8, &[u8]), Error> { buf.split_first().map(|(&x, rest)| (x, rest)).ok_or(Error::EndOfBuffer) }
-pub fn read_raw_u16<B: ByteSlice>(buf: B) -> Result<(u16, B), Error> {
-    // pub fn read_raw_u16(buf: &[u8]) -> Result<(u16, &[u8]), Error> {
-    if buf.len() < 2 {
-        return Err(Error::EndOfBuffer);
-    }
-    let (v, rest) = buf.split_at(2);
-    Ok((BigEndian::read_u16(&*v), rest))
+pub fn read_raw_u8<B: SplitByteSlice>(buf: B) -> Result<(u8, B), Error> {
+    let (v, rest) = buf.split_at(1).map_err(|_| Error::EndOfBuffer)?;
+    Ok((v[0], rest))
 }
-pub fn read_raw_u32(buf: &[u8]) -> Result<(u32, &[u8]), Error> {
-    if buf.len() < 4 {
-        return Err(Error::EndOfBuffer);
-    }
-    let (v, rest) = buf.split_at(4);
-    Ok((BigEndian::read_u32(v), rest))
+pub fn read_raw_u16<B: SplitByteSlice>(buf: B) -> Result<(u16, B), Error> {
+    let (v, rest) = buf.split_at(2).map_err(|_| Error::EndOfBuffer)?;
+    Ok((BigEndian::read_u16(&v), rest))
+}
+pub fn read_raw_u32<B: SplitByteSlice>(buf: B) -> Result<(u32, B), Error> {
+    let (v, rest) = buf.split_at(4).map_err(|_| Error::EndOfBuffer)?;
+    Ok((BigEndian::read_u32(&v), rest))
 }
 #[cfg(feature = "u64")]
-pub fn read_raw_u64(buf: &[u8]) -> Result<(u64, &[u8]), Error> {
-    if buf.len() < 8 {
-        return Err(Error::EndOfBuffer);
-    }
-    let (v, rest) = buf.split_at(8);
-    Ok((BigEndian::read_u64(v), rest))
+pub fn read_raw_u64<B: SplitByteSlice>(buf: B) -> Result<(u64, B), Error> {
+    let (v, rest) = buf.split_at(8).map_err(|_| Error::EndOfBuffer)?;
+    Ok((BigEndian::read_u64(&v), rest))
 }
 #[allow(dead_code)]
 fn read_raw_ux(buf: &[u8], num_bytes: u8) -> Result<(usize, &[u8]), Error> {
@@ -146,7 +139,7 @@ fn read_raw_ux(buf: &[u8], num_bytes: u8) -> Result<(usize, &[u8]), Error> {
 }
 
 #[inline(always)]
-pub fn read_int<B: ByteSlice, T: FromPrimitive>(buf: B) -> Result<(T, usize), Error> {
+pub fn read_int<B: SplitByteSlice, T: FromPrimitive>(buf: B) -> Result<(T, usize), Error> {
     match read_u64(buf) {
         Ok((v, len)) => T::from_u64(v).map_or(Err(Error::OutOfBounds), |v| Ok((v, len))),
         Err(kind) => Err(kind),
@@ -154,7 +147,7 @@ pub fn read_int<B: ByteSlice, T: FromPrimitive>(buf: B) -> Result<(T, usize), Er
 }
 #[cfg(feature = "i64")]
 #[inline(always)]
-pub fn read_sint<B: ByteSlice, T: FromPrimitive>(buf: B) -> Result<(T, usize), Error> {
+pub fn read_sint<B: SplitByteSlice, T: FromPrimitive>(buf: B) -> Result<(T, usize), Error> {
     match read_i64(buf) {
         Ok((v, len)) => T::from_i64(v).map_or(Err(Error::OutOfBounds), |v| Ok((v, len))),
         Err(kind) => Err(kind),
@@ -162,7 +155,7 @@ pub fn read_sint<B: ByteSlice, T: FromPrimitive>(buf: B) -> Result<(T, usize), E
 }
 #[cfg(not(feature = "i64"))]
 #[inline(always)]
-pub fn read_sint<B: ByteSlice, T: FromPrimitive>(buf: B) -> Result<(T, usize), Error> {
+pub fn read_sint<B: SplitByteSlice, T: FromPrimitive>(buf: B) -> Result<(T, usize), Error> {
     match read_i32(buf) {
         Ok((v, len)) => {
             if let Some(v) = T::from_i32(v) {
@@ -176,20 +169,20 @@ pub fn read_sint<B: ByteSlice, T: FromPrimitive>(buf: B) -> Result<(T, usize), E
 }
 
 #[inline(always)]
-pub fn read_u8<B: ByteSlice>(buf: B) -> Result<(u8, usize), Error> { read_int(buf) }
+pub fn read_u8<B: SplitByteSlice>(buf: B) -> Result<(u8, usize), Error> { read_int(buf) }
 #[inline(always)]
-pub fn read_u16<B: ByteSlice>(buf: B) -> Result<(u16, usize), Error> { read_int(buf) }
+pub fn read_u16<B: SplitByteSlice>(buf: B) -> Result<(u16, usize), Error> { read_int(buf) }
 #[inline(always)]
-pub fn read_u32<B: ByteSlice>(buf: B) -> Result<(u32, usize), Error> { read_int(buf) }
+pub fn read_u32<B: SplitByteSlice>(buf: B) -> Result<(u32, usize), Error> { read_int(buf) }
 
 #[inline(always)]
-pub fn read_i8<B: ByteSlice>(buf: B) -> Result<(i8, usize), Error> { read_sint(buf) }
+pub fn read_i8<B: SplitByteSlice>(buf: B) -> Result<(i8, usize), Error> { read_sint(buf) }
 #[inline(always)]
-pub fn read_i16<B: ByteSlice>(buf: B) -> Result<(i16, usize), Error> { read_sint(buf) }
+pub fn read_i16<B: SplitByteSlice>(buf: B) -> Result<(i16, usize), Error> { read_sint(buf) }
 #[inline(always)]
-pub fn read_i32<B: ByteSlice>(buf: B) -> Result<(i32, usize), Error> { read_sint(buf) }
+pub fn read_i32<B: SplitByteSlice>(buf: B) -> Result<(i32, usize), Error> { read_sint(buf) }
 
-pub fn read_bool<B: ByteSlice>(buf: B) -> Result<(bool, usize), Error> {
+pub fn read_bool<B: SplitByteSlice>(buf: B) -> Result<(bool, usize), Error> {
     if buf.len() == 0 {
         return Err(Error::EndOfBuffer);
     }
@@ -202,7 +195,7 @@ pub fn read_bool<B: ByteSlice>(buf: B) -> Result<(bool, usize), Error> {
 }
 
 #[inline(never)]
-pub fn read_u64<B: ByteSlice>(buf: B) -> Result<(u64, usize), Error> {
+pub fn read_u64<B: SplitByteSlice>(buf: B) -> Result<(u64, usize), Error> {
     if buf.len() == 0 {
         return Err(Error::EndOfBuffer);
     }
@@ -225,7 +218,7 @@ pub fn read_u64<B: ByteSlice>(buf: B) -> Result<(u64, usize), Error> {
 }
 
 #[inline(never)]
-pub fn read_i64<B: ByteSlice>(buf: B) -> Result<(i64, usize), Error> {
+pub fn read_i64<B: SplitByteSlice>(buf: B) -> Result<(i64, usize), Error> {
     if buf.len() == 0 {
         return Err(Error::EndOfBuffer);
     }
@@ -297,7 +290,7 @@ pub fn read_i64<B: ByteSlice>(buf: B) -> Result<(i64, usize), Error> {
     }
 }
 
-pub fn read_f32<B: ByteSlice>(buf: B) -> Result<(f32, usize), Error> {
+pub fn read_f32<B: SplitByteSlice>(buf: B) -> Result<(f32, usize), Error> {
     if buf.len() == 0 {
         return Err(Error::EndOfBuffer);
     }
@@ -314,7 +307,7 @@ pub fn read_f32<B: ByteSlice>(buf: B) -> Result<(f32, usize), Error> {
         _ => Err(Error::EndOfBuffer),
     }
 }
-pub fn read_f64<B: ByteSlice>(buf: B) -> Result<(f64, usize), Error> {
+pub fn read_f64<B: SplitByteSlice>(buf: B) -> Result<(f64, usize), Error> {
     if buf.len() == 0 {
         return Err(Error::EndOfBuffer);
     }
@@ -340,7 +333,7 @@ pub fn read_f64<B: ByteSlice>(buf: B) -> Result<(f64, usize), Error> {
     }
 }
 
-pub fn read_bin<B: ByteSlice>(buf: B) -> Result<(B, usize), Error> {
+pub fn read_bin<B: SplitByteSlice>(buf: B) -> Result<(B, usize), Error> {
     if buf.len() == 0 {
         return Err(Error::EndOfBuffer);
     }
@@ -351,8 +344,8 @@ pub fn read_bin<B: ByteSlice>(buf: B) -> Result<(B, usize), Error> {
             let header_len = 1;
             let len = len as usize;
             if buf.len() >= header_len + len {
-                let (_head, rest) = buf.split_at(header_len);
-                let (bin, _rest) = rest.split_at(len);
+                let (_head, rest) = buf.split_at(header_len).ok().unwrap(); // cannot fail because of check above
+                let (bin, _rest) = rest.split_at(len).ok().unwrap(); // cannot fail because of check above
                 Ok((bin, header_len + len))
             } else {
                 Err(Error::EndOfBuffer)
@@ -363,8 +356,8 @@ pub fn read_bin<B: ByteSlice>(buf: B) -> Result<(B, usize), Error> {
             if let Some(&len) = buf.get(1) {
                 let len = len as usize;
                 if buf.len() >= header_len + len {
-                    let (_head, rest) = buf.split_at(header_len);
-                    let (bin, _rest) = rest.split_at(len);
+                    let (_head, rest) = buf.split_at(header_len).ok().unwrap(); // cannot fail because of check above
+                    let (bin, _rest) = rest.split_at(len).ok().unwrap(); // cannot fail because of check above
                     Ok((bin, header_len + len))
                 } else {
                     Err(Error::EndOfBuffer)
@@ -378,11 +371,11 @@ pub fn read_bin<B: ByteSlice>(buf: B) -> Result<(B, usize), Error> {
             if buf.len() < header_len {
                 return Err(Error::EndOfBuffer);
             }
-            let (_, buf) = buf.split_at(1);
-            let (len, buf) = read_raw_u16(buf)?; //BigEndian::read_u16(&buf[1..header_len]) as usize;
+            let (_, buf) = buf.split_at(1).ok().unwrap(); // cannot fail because of check above
+            let (len, buf) = read_raw_u16(buf)?;
             let len = len as usize;
             if buf.len() >= len {
-                let (bin, _rest) = buf.split_at(len);
+                let (bin, _rest) = buf.split_at(len).ok().unwrap(); // cannot fail because of check above
                 Ok((bin, header_len + len))
             } else {
                 Err(Error::EndOfBuffer)
@@ -396,8 +389,8 @@ pub fn read_bin<B: ByteSlice>(buf: B) -> Result<(B, usize), Error> {
             }
             let len = BigEndian::read_u32(&buf[1..header_len]) as usize;
             if buf.len() >= header_len + len {
-                let (_head, rest) = buf.split_at(header_len);
-                let (bin, _rest) = rest.split_at(len);
+                let (_head, rest) = buf.split_at(header_len).ok().unwrap(); // cannot fail because of check above
+                let (bin, _rest) = rest.split_at(len).ok().unwrap(); // cannot fail because of check above
                 Ok((bin, header_len + len))
             } else {
                 Err(Error::EndOfBuffer)
@@ -473,7 +466,7 @@ pub fn read_str(buf: &[u8]) -> Result<(&str, usize), Error> {
     Ok((s, header_len + len))
 }
 
-pub fn read_array_len<B: ByteSlice>(buf: B) -> Result<(usize, usize), Error> {
+pub fn read_array_len<B: SplitByteSlice>(buf: B) -> Result<(usize, usize), Error> {
     if buf.len() == 0 {
         return Err(Error::EndOfBuffer);
     }
@@ -521,7 +514,7 @@ pub fn read_array_len<B: ByteSlice>(buf: B) -> Result<(usize, usize), Error> {
     Ok((len, header_len))
 }
 
-pub fn read_map_len<B: ByteSlice>(buf: B) -> Result<(usize, usize), Error> {
+pub fn read_map_len<B: SplitByteSlice>(buf: B) -> Result<(usize, usize), Error> {
     if buf.len() == 0 {
         return Err(Error::EndOfBuffer);
     }
@@ -560,7 +553,7 @@ pub fn read_map_len<B: ByteSlice>(buf: B) -> Result<(usize, usize), Error> {
     }
 }
 
-pub fn skip_any<B: ByteSlice>(buf: B) -> Result<((), usize), Error> {
+pub fn skip_any<B: SplitByteSlice>(buf: B) -> Result<((), usize), Error> {
     if buf.is_empty() {
         return Ok(((), 0));
     }

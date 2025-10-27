@@ -78,7 +78,7 @@ pub(crate) fn get_ext_start(data_len: usize) -> Result<(Marker, usize), Error> {
     Ok((marker, header_len))
 }
 
-pub(crate) fn read_ext_len<B: zerocopy::ByteSlice>(buf: B) -> Result<(usize, usize), crate::decode::Error> {
+pub(crate) fn read_ext_len<B: zerocopy::SplitByteSlice>(buf: B) -> Result<(usize, usize), crate::decode::Error> {
     if buf.len() < 2 {
         return Err(crate::decode::Error::EndOfBuffer);
     }
