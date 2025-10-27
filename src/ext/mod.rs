@@ -259,7 +259,7 @@ impl<'de: 'a, 'a> ::serde::de::Deserialize<'de> for Ext<'a> {
                         Err(_e) => {
                             // Error, could be an unknown field name
                             // println!("{:?}", e);
-                            map.next_value()?;
+                            map.next_value::<()>()?;
                         }
                     }
                 }

@@ -218,7 +218,7 @@ impl<'de> ::serde::de::Deserialize<'de> for Timestamp {
                         Err(_e) => {
                             // Error, could be an unknown field name
                             // println!("{:?}", e);
-                            map.next_value()?;
+                            map.next_value::<()>()?;
                         }
                     }
                 }
