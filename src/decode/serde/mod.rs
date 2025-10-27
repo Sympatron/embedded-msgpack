@@ -1,6 +1,6 @@
 use crate::marker::Marker;
 use core::fmt;
-use paste::paste;
+use pastey::paste;
 use serde::de::{self, Visitor};
 
 use self::{enum_::UnitVariantAccess, map::MapAccess, seq::SeqAccess};
