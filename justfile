@@ -7,19 +7,19 @@ test:
   just test-compliant
 
 test-default:
-  cargo test --features=derive-debug
+  cargo nextest run --features=derive-debug
 
 test-std:
-  cargo test --features=std
+  cargo nextest run --features=std
 
 test-no-default:
-  cargo test --features=derive-debug --no-default-features
+  cargo nextest run --features=derive-debug --no-default-features
 
 test-alloc:
-  cargo test --features=derive-debug,alloc
+  cargo nextest run --features=derive-debug,alloc
 
 test-compliant:
-  cargo test --features=derive-debug,compliant
+  cargo nextest run --features=derive-debug,compliant
 
 fuzz:
   cargo +nightly fuzz run decode_from_slice -- -max_total_time=300
