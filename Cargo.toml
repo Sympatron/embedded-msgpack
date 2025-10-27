@@ -28,7 +28,7 @@ serde_repr = { version = "0.1", default-features = false }
 serde_json = { version = "1", default-features = false, features = ["std"] }
 
 [features]
-default = ["u64", "i64", "bin16", "timestamp", "serde", "serde_bytes", "ext8"]
+default = ["compliant", "serde", "serde_bytes"]
 std = ["byteorder/std", "num-traits/std", "serde_bytes/std", "serde/std", "derive-debug"]
 alloc = ["serde/alloc", "serde_bytes/alloc"]
 u64 = []
@@ -55,7 +55,6 @@ compliant = [
     "map32",
     "array32",
     "str32",
-    "ext",
     "fixext",
     "ext8",
     "ext16",
