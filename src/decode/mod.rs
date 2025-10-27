@@ -145,6 +145,7 @@ fn read_raw_ux(buf: &[u8], num_bytes: u8) -> Result<(usize, &[u8]), Error> {
     })
 }
 
+#[inline(always)]
 pub fn read_int<B: ByteSlice, T: FromPrimitive>(buf: B) -> Result<(T, usize), Error> {
     match read_u64(buf) {
         Ok((v, len)) => T::from_u64(v).map_or(Err(Error::OutOfBounds), |v| Ok((v, len))),
@@ -152,6 +153,7 @@ pub fn read_int<B: ByteSlice, T: FromPrimitive>(buf: B) -> Result<(T, usize), Er
     }
 }
 #[cfg(feature = "i64")]
+#[inline(always)]
 pub fn read_sint<B: ByteSlice, T: FromPrimitive>(buf: B) -> Result<(T, usize), Error> {
     match read_i64(buf) {
         Ok((v, len)) => T::from_i64(v).map_or(Err(Error::OutOfBounds), |v| Ok((v, len))),
@@ -159,6 +161,7 @@ pub fn read_sint<B: ByteSlice, T: FromPrimitive>(buf: B) -> Result<(T, usize), E
     }
 }
 #[cfg(not(feature = "i64"))]
+#[inline(always)]
 pub fn read_sint<B: ByteSlice, T: FromPrimitive>(buf: B) -> Result<(T, usize), Error> {
     match read_i32(buf) {
         Ok((v, len)) => {
@@ -198,6 +201,7 @@ pub fn read_bool<B: ByteSlice>(buf: B) -> Result<(bool, usize), Error> {
     }
 }
 
+#[inline(never)]
 pub fn read_u64<B: ByteSlice>(buf: B) -> Result<(u64, usize), Error> {
     if buf.len() == 0 {
         return Err(Error::EndOfBuffer);
@@ -220,6 +224,7 @@ pub fn read_u64<B: ByteSlice>(buf: B) -> Result<(u64, usize), Error> {
     }
 }
 
+#[inline(never)]
 pub fn read_i64<B: ByteSlice>(buf: B) -> Result<(i64, usize), Error> {
     if buf.len() == 0 {
         return Err(Error::EndOfBuffer);
