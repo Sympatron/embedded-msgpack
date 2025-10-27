@@ -59,7 +59,7 @@ enum State {
 }
 
 impl<'a> Deserializer<'a> {
-    pub const fn new(slice: &'a [u8]) -> Deserializer<'_> {
+    pub const fn new(slice: &'a [u8]) -> Deserializer<'a> {
         Deserializer {
             slice,
             index: 0,
