@@ -238,18 +238,8 @@ impl<'de: 'a, 'a> ::serde::de::Deserialize<'de> for Ext<'a> {
                     }
                 }
 
-                // if let Ok(typ) = map.next_key::<Field>() {
-                //     let typ = match typ {
-                //         Some(v) => v,
-                //         None => return Err(::serde::de::Error::custom("ext type not found")),
-                //     };
-                //     let v: Binary = map.next_value()?;
-                //     Ok(Ext::new(typ.0, &v))
-                // } else {
                 let mut typ = None;
                 let mut data = None;
-                // let mut seconds = None;
-                // let mut nanoseconds = None;
 
                 loop {
                     match map.next_key::<Field>() {

@@ -233,7 +233,6 @@ impl<'de> ::serde::de::Deserialize<'de> for Timestamp {
                     (Some(_), None, _, _) => Err(::serde::de::Error::custom("ext data not found")),
                     _ => Err(::serde::de::Error::custom("ext type field not found")),
                 }
-                // }
             }
         }
 
