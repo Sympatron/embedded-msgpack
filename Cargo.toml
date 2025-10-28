@@ -10,13 +10,14 @@ authors = ["Karsten Große"]
 keywords = ["no_std", "msgpack", "messagepack", "serde"]
 categories = ["no-std", "embedded"]
 edition = "2018"
+resolver = "2"
 
 [package.metadata.docs.rs]
 features = ["compliant"]
 
 [dependencies]
 zerocopy = { version = "0.8", default-features = false }
-serde = { version = "1", default-features = false, optional = true, features = ["derive"] }
+serde = { version = "1", default-features = false, optional = true }
 serde_bytes = { version = "0.11", default-features = false, optional = true }
 pastey = "0.1"
 heapless = { version = "0.9", default-features = false, optional = true }
@@ -24,6 +25,7 @@ heapless = { version = "0.9", default-features = false, optional = true }
 [dev-dependencies]
 serde_repr = { version = "0.1", default-features = false }
 serde_json = { version = "1", default-features = false, features = ["std"] }
+serde = { version = "1", features = ["derive"] }
 
 [features]
 default = ["compliant", "serde", "serde_bytes"]

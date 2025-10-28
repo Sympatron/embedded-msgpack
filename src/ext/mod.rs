@@ -8,10 +8,22 @@ use core::{convert::TryInto, fmt::Display, marker::PhantomData};
 use serde::{ser::SerializeStruct, Deserialize, Serialize};
 
 #[repr(transparent)]
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(any(test, feature = "derive-debug"), derive(core::fmt::Debug))]
-#[serde(transparent)]
 struct ExtType(i8);
+
+impl Serialize for ExtType {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where S: serde::Serializer {
+        Serialize::serialize(&self.0, serializer)
+    }
+}
+impl<'de> Deserialize<'de> for ExtType {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where D: serde::Deserializer<'de> {
+        Deserialize::deserialize(deserializer).map(|t| ExtType { 0: t })
+    }
+}
 
 impl Display for ExtType {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
