@@ -3,8 +3,7 @@ mod serde;
 
 use crate::marker::Marker;
 
-use byteorder::{BigEndian, ByteOrder};
-use core::convert::TryFrom;
+use core::convert::{TryFrom, TryInto as _};
 use zerocopy::SplitByteSlice;
 
 /// Error type indicating why deserialization failed
@@ -108,16 +107,16 @@ pub fn read_raw_u8<B: SplitByteSlice>(buf: B) -> Result<(u8, B), Error> {
 }
 pub fn read_raw_u16<B: SplitByteSlice>(buf: B) -> Result<(u16, B), Error> {
     let (v, rest) = buf.split_at(2).map_err(|_| Error::EndOfBuffer)?;
-    Ok((BigEndian::read_u16(&v), rest))
+    Ok((read_be_u16(&v), rest))
 }
 pub fn read_raw_u32<B: SplitByteSlice>(buf: B) -> Result<(u32, B), Error> {
     let (v, rest) = buf.split_at(4).map_err(|_| Error::EndOfBuffer)?;
-    Ok((BigEndian::read_u32(&v), rest))
+    Ok((read_be_u32(&v), rest))
 }
 #[cfg(feature = "u64")]
 pub fn read_raw_u64<B: SplitByteSlice>(buf: B) -> Result<(u64, B), Error> {
     let (v, rest) = buf.split_at(8).map_err(|_| Error::EndOfBuffer)?;
-    Ok((BigEndian::read_u64(&v), rest))
+    Ok((read_be_u64(&v), rest))
 }
 #[allow(dead_code)]
 fn read_raw_ux(buf: &[u8], num_bytes: u8) -> Result<(usize, &[u8]), Error> {
@@ -168,6 +167,24 @@ pub fn read_sint<B: SplitByteSlice, T: TryFrom<i32>>(buf: B) -> Result<(T, usize
     }
 }
 
+#[inline]
+pub(crate) fn read_be_u16(buf: &[u8]) -> u16 { u16::from_be_bytes(buf[..2].try_into().unwrap()) }
+#[inline]
+pub(crate) fn read_be_u32(buf: &[u8]) -> u32 { u32::from_be_bytes(buf[..4].try_into().unwrap()) }
+#[inline]
+pub(crate) fn read_be_u64(buf: &[u8]) -> u64 { u64::from_be_bytes(buf[..8].try_into().unwrap()) }
+#[inline]
+pub(crate) fn read_be_i16(buf: &[u8]) -> i16 { read_be_u16(buf) as _ }
+#[inline]
+pub(crate) fn read_be_i32(buf: &[u8]) -> i32 { read_be_u32(buf) as _ }
+#[inline(always)]
+pub(crate) fn read_be_i64(buf: &[u8]) -> i64 { read_be_u64(buf) as _ }
+
+#[inline]
+pub(crate) fn read_be_f32(buf: &[u8]) -> f32 { f32::from_be_bytes(buf[..4].try_into().unwrap()) }
+#[inline]
+pub(crate) fn read_be_f64(buf: &[u8]) -> f64 { f64::from_be_bytes(buf[..8].try_into().unwrap()) }
+
 #[inline(always)]
 pub fn read_u8<B: SplitByteSlice>(buf: B) -> Result<(u8, usize), Error> { read_int(buf) }
 #[inline(always)]
@@ -205,7 +222,7 @@ pub fn read_u64<B: SplitByteSlice>(buf: B) -> Result<(u64, usize), Error> {
         // Nur u64 muss hier gesondert behandelt werden, weil es der einzige Typ ist, der potentiell nicht in i64 passt
         Marker::U64 => {
             if buf.len() >= 9 {
-                Ok((BigEndian::read_u64(&buf[1..9]) as u64, 9))
+                Ok((read_be_u64(&buf[1..9]) as u64, 9))
             } else {
                 Err(Error::EndOfBuffer)
             }
@@ -237,21 +254,21 @@ pub fn read_i64<B: SplitByteSlice>(buf: B) -> Result<(i64, usize), Error> {
         }
         Marker::U16 => {
             if buf.len() >= 3 {
-                Ok((i64::from(BigEndian::read_u16(&buf[1..3])), 3))
+                Ok((i64::from(read_be_u16(&buf[1..3])), 3))
             } else {
                 Err(Error::EndOfBuffer)
             }
         }
         Marker::U32 => {
             if buf.len() >= 5 {
-                Ok((i64::from(BigEndian::read_u32(&buf[1..5])), 5))
+                Ok((i64::from(read_be_u32(&buf[1..5])), 5))
             } else {
                 Err(Error::EndOfBuffer)
             }
         }
         Marker::U64 => {
             if buf.len() >= 9 {
-                let u = BigEndian::read_u64(&buf[1..9]);
+                let u = read_be_u64(&buf[1..9]);
                 i64::try_from(u).map_or(Err(Error::OutOfBounds), |i| Ok((i, 9)))
             } else {
                 Err(Error::EndOfBuffer)
@@ -267,21 +284,21 @@ pub fn read_i64<B: SplitByteSlice>(buf: B) -> Result<(i64, usize), Error> {
         }
         Marker::I16 => {
             if buf.len() >= 3 {
-                Ok((i64::from(BigEndian::read_i16(&buf[1..3])), 3))
+                Ok((i64::from(read_be_i16(&buf[1..3])), 3))
             } else {
                 Err(Error::EndOfBuffer)
             }
         }
         Marker::I32 => {
             if buf.len() >= 5 {
-                Ok((i64::from(BigEndian::read_i32(&buf[1..5])), 5))
+                Ok((i64::from(read_be_i32(&buf[1..5])), 5))
             } else {
                 Err(Error::EndOfBuffer)
             }
         }
         Marker::I64 => {
             if buf.len() >= 9 {
-                Ok((BigEndian::read_i64(&buf[1..9]), 9))
+                Ok((read_be_i64(&buf[1..9]), 9))
             } else {
                 Err(Error::EndOfBuffer)
             }
@@ -299,7 +316,7 @@ pub fn read_f32<B: SplitByteSlice>(buf: B) -> Result<(f32, usize), Error> {
     match marker {
         Marker::F32 => {
             if buf.len() >= 5 {
-                Ok((BigEndian::read_f32(&buf[1..5]), 5))
+                Ok((read_be_f32(&buf[1..5]), 5))
             } else {
                 Err(Error::EndOfBuffer)
             }
@@ -316,7 +333,7 @@ pub fn read_f64<B: SplitByteSlice>(buf: B) -> Result<(f64, usize), Error> {
     match marker {
         Marker::F32 => {
             if buf.len() >= 5 {
-                let v = BigEndian::read_f32(&buf[1..5]);
+                let v = read_be_f32(&buf[1..5]);
                 Ok((f64::from(v), 5))
             } else {
                 Err(Error::EndOfBuffer)
@@ -324,7 +341,7 @@ pub fn read_f64<B: SplitByteSlice>(buf: B) -> Result<(f64, usize), Error> {
         }
         Marker::F64 => {
             if buf.len() >= 9 {
-                Ok((BigEndian::read_f64(&buf[1..9]), 9))
+                Ok((read_be_f64(&buf[1..9]), 9))
             } else {
                 Err(Error::EndOfBuffer)
             }
@@ -387,7 +404,7 @@ pub fn read_bin<B: SplitByteSlice>(buf: B) -> Result<(B, usize), Error> {
             if buf.len() < header_len {
                 return Err(Error::EndOfBuffer);
             }
-            let len = BigEndian::read_u32(&buf[1..header_len]) as usize;
+            let len = read_be_u32(&buf[1..header_len]) as usize;
             if buf.len() >= header_len + len {
                 let (_head, rest) = buf.split_at(header_len).ok().unwrap(); // cannot fail because of check above
                 let (bin, _rest) = rest.split_at(len).ok().unwrap(); // cannot fail because of check above
@@ -434,7 +451,7 @@ pub fn read_str(buf: &[u8]) -> Result<(&str, usize), Error> {
             if buf.len() < header_len {
                 return Err(Error::EndOfBuffer);
             }
-            let len = BigEndian::read_u16(&buf[1..header_len]) as usize;
+            let len = read_be_u16(&buf[1..header_len]) as usize;
             if buf.len() >= header_len + len {
                 (header_len, len)
             } else {
@@ -447,7 +464,7 @@ pub fn read_str(buf: &[u8]) -> Result<(&str, usize), Error> {
             if buf.len() < header_len {
                 return Err(Error::EndOfBuffer);
             }
-            let len = BigEndian::read_u32(&buf[1..header_len]) as usize;
+            let len = read_be_u32(&buf[1..header_len]) as usize;
             if buf.len() >= header_len + len {
                 (header_len, len)
             } else {
@@ -489,7 +506,7 @@ pub fn read_array_len<B: SplitByteSlice>(buf: B) -> Result<(usize, usize), Error
             if buf.len() < header_len {
                 return Err(Error::EndOfBuffer);
             }
-            let len = BigEndian::read_u16(&buf[1..header_len]) as usize;
+            let len = read_be_u16(&buf[1..header_len]) as usize;
             if buf.len() >= header_len + len {
                 (header_len, len)
             } else {
@@ -502,7 +519,7 @@ pub fn read_array_len<B: SplitByteSlice>(buf: B) -> Result<(usize, usize), Error
             if buf.len() < header_len {
                 return Err(Error::EndOfBuffer);
             }
-            let len = BigEndian::read_u32(&buf[1..header_len]) as usize;
+            let len = read_be_u32(&buf[1..header_len]) as usize;
             if buf.len() >= header_len + len {
                 (header_len, len)
             } else {
@@ -532,7 +549,7 @@ pub fn read_map_len<B: SplitByteSlice>(buf: B) -> Result<(usize, usize), Error> 
             if buf.len() < header_len {
                 return Err(Error::EndOfBuffer);
             }
-            let len = BigEndian::read_u16(&buf[1..header_len]) as usize;
+            let len = read_be_u16(&buf[1..header_len]) as usize;
             (len, header_len)
         }
         #[cfg(feature = "map32")]
@@ -541,7 +558,7 @@ pub fn read_map_len<B: SplitByteSlice>(buf: B) -> Result<(usize, usize), Error> 
             if buf.len() < header_len {
                 return Err(Error::EndOfBuffer);
             }
-            let len = BigEndian::read_u32(&buf[1..header_len]) as usize;
+            let len = read_be_u32(&buf[1..header_len]) as usize;
             (len, header_len)
         }
         _ => return Err(Error::InvalidMapType),
@@ -586,13 +603,13 @@ pub fn skip_any<B: SplitByteSlice>(buf: B) -> Result<((), usize), Error> {
             if buf.len() < 3 {
                 return Err(Error::EndOfBuffer);
             }
-            3 + BigEndian::read_u16(&buf[1..3]) as usize
+            3 + read_be_u16(&buf[1..3]) as usize
         }
         Marker::Str32 | Marker::Bin32 => {
             if buf.len() < 5 {
                 return Err(Error::EndOfBuffer);
             }
-            5 + BigEndian::read_u32(&buf[1..5]) as usize
+            5 + read_be_u32(&buf[1..5]) as usize
         }
 
         Marker::FixArray(_) | Marker::Array16 | Marker::Array32 => {
@@ -628,13 +645,13 @@ pub fn skip_any<B: SplitByteSlice>(buf: B) -> Result<((), usize), Error> {
             if buf.len() < 3 {
                 return Err(Error::EndOfBuffer);
             }
-            4 + BigEndian::read_u16(&buf[1..3]) as usize
+            4 + read_be_u16(&buf[1..3]) as usize
         }
         Marker::Ext32 => {
             if buf.len() < 5 {
                 return Err(Error::EndOfBuffer);
             }
-            6 + BigEndian::read_u32(&buf[1..5]) as usize
+            6 + read_be_u32(&buf[1..5]) as usize
         }
     };
     if buf.len() < n {

@@ -3,7 +3,6 @@ pub mod serde;
 
 use crate::marker::Marker;
 
-use byteorder::{BigEndian, ByteOrder};
 use core::{
     convert::{From, TryFrom},
     ops::Deref,
@@ -33,6 +32,69 @@ impl ::core::fmt::Display for Error {
 #[cfg(feature = "std")]
 impl ::std::error::Error for Error {}
 
+#[inline]
+pub(crate) fn write_be_u16(buf: &mut [u8], n: u16) { buf[..2].copy_from_slice(&n.to_be_bytes()); }
+#[inline]
+pub(crate) fn write_be_u32(buf: &mut [u8], n: u32) { buf[..4].copy_from_slice(&n.to_be_bytes()); }
+#[allow(unused)]
+#[inline]
+pub(crate) fn write_be_u64(buf: &mut [u8], n: u64) { buf[..8].copy_from_slice(&n.to_be_bytes()); }
+#[inline]
+pub(crate) fn write_be_i16(buf: &mut [u8], n: i16) { write_be_u16(buf, n as _); }
+#[inline]
+pub(crate) fn write_be_i32(buf: &mut [u8], n: i32) { write_be_u32(buf, n as _); }
+#[allow(unused)]
+#[inline]
+pub(crate) fn write_be_i64(buf: &mut [u8], n: i64) { write_be_u64(buf, n as _); }
+
+#[allow(unused)]
+#[inline]
+fn pack_size(n: u64) -> usize {
+    #[cfg(target_has_atomic = "ptr")]
+    {
+        let bits = 64 - n.leading_zeros() as usize;
+        bits.div_ceil(8).max(1)
+    }
+    // thumbv6m has no CLZ instruction which makes the above code big and slow
+    // Since thumbv6m also has no atomics use this to distinguish them
+    // Source: https://arm-software.github.io/CMSIS_6/main/Core/group__intrinsic__CPU__gr.html#ga90884c591ac5d73d6069334eba9d6c02
+    #[cfg(not(target_has_atomic = "ptr"))]
+    {
+        if n < 1 << 8 {
+            1
+        } else if n < 1 << 16 {
+            2
+        } else if n < 1 << 24 {
+            3
+        } else if n < 1 << 32 {
+            4
+        } else if n < 1 << 40 {
+            5
+        } else if n < 1 << 48 {
+            6
+        } else if n < 1 << 56 {
+            7
+        } else {
+            8
+        }
+    }
+}
+#[allow(unused)]
+#[inline]
+pub(crate) fn write_be_uint(buf: &mut [u8], n: u64, nbytes: usize) {
+    debug_assert!(pack_size(n) <= nbytes && nbytes <= 8);
+    debug_assert!(nbytes <= buf.len());
+    unsafe {
+        let bytes = *(&n.to_be() as *const u64 as *const [u8; 8]);
+        core::ptr::copy_nonoverlapping(bytes.as_ptr().offset((8 - nbytes) as isize), buf.as_mut_ptr(), nbytes);
+    }
+}
+
+#[inline]
+pub(crate) fn write_be_f32(buf: &mut [u8], n: f32) { buf[..4].copy_from_slice(&n.to_be_bytes()); }
+#[inline]
+pub(crate) fn write_be_f64(buf: &mut [u8], n: f64) { buf[..8].copy_from_slice(&n.to_be_bytes()); }
+
 pub trait SerializeIntoSlice {
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error>;
 }
@@ -61,7 +123,7 @@ pub fn serialize_u16(value: u16, buf: &mut [u8]) -> Result<usize, Error> {
             return Err(Error::EndOfBuffer);
         }
         buf[0] = Marker::U16.to_u8();
-        BigEndian::write_u16(&mut buf[1..], value);
+        write_be_u16(&mut buf[1..], value);
         Ok(3)
     }
 }
@@ -73,7 +135,7 @@ pub fn serialize_u32(value: u32, buf: &mut [u8]) -> Result<usize, Error> {
             return Err(Error::EndOfBuffer);
         }
         buf[0] = Marker::U32.to_u8();
-        BigEndian::write_u32(&mut buf[1..], value);
+        write_be_u32(&mut buf[1..], value);
         Ok(5)
     }
 }
@@ -86,7 +148,7 @@ pub fn serialize_u64(value: u64, buf: &mut [u8]) -> Result<usize, Error> {
             return Err(Error::EndOfBuffer);
         }
         buf[0] = Marker::U64.to_u8();
-        BigEndian::write_u64(&mut buf[1..], value);
+        write_be_u64(&mut buf[1..], value);
         Ok(9)
     }
 }
@@ -121,7 +183,7 @@ pub fn serialize_i16(value: i16, buf: &mut [u8]) -> Result<usize, Error> {
             return Err(Error::EndOfBuffer);
         }
         buf[0] = Marker::I16.to_u8();
-        BigEndian::write_i16(&mut buf[1..], value);
+        write_be_i16(&mut buf[1..], value);
         Ok(3)
     }
 }
@@ -136,7 +198,7 @@ pub fn serialize_i32(value: i32, buf: &mut [u8]) -> Result<usize, Error> {
             return Err(Error::EndOfBuffer);
         }
         buf[0] = Marker::I32.to_u8();
-        BigEndian::write_i32(&mut buf[1..], value);
+        write_be_i32(&mut buf[1..], value);
         Ok(5)
     }
 }
@@ -153,7 +215,7 @@ pub fn serialize_i64(value: i64, buf: &mut [u8]) -> Result<usize, Error> {
             return Err(Error::EndOfBuffer);
         }
         buf[0] = Marker::I64.to_u8();
-        BigEndian::write_i64(&mut buf[1..], value);
+        write_be_i64(&mut buf[1..], value);
         Ok(9)
     }
 }
@@ -162,7 +224,7 @@ pub fn serialize_f32(value: f32, buf: &mut [u8]) -> Result<usize, Error> {
         return Err(Error::EndOfBuffer);
     }
     buf[0] = Marker::F32.to_u8();
-    BigEndian::write_f32(&mut buf[1..], value);
+    write_be_f32(&mut buf[1..], value);
     Ok(5)
 }
 pub fn serialize_f64(value: f64, buf: &mut [u8]) -> Result<usize, Error> {
@@ -170,7 +232,7 @@ pub fn serialize_f64(value: f64, buf: &mut [u8]) -> Result<usize, Error> {
         return Err(Error::EndOfBuffer);
     }
     buf[0] = Marker::F64.to_u8();
-    BigEndian::write_f64(&mut buf[1..], value);
+    write_be_f64(&mut buf[1..], value);
     Ok(9)
 }
 
@@ -344,7 +406,7 @@ impl<'a> SerializeIntoSlice for Binary<'a> {
                 return Err(Error::EndOfBuffer);
             }
             buf[0] = Marker::Bin16.to_u8();
-            BigEndian::write_u16(&mut buf[1..], n16);
+            write_be_u16(&mut buf[1..], n16);
             buf[3..(3 + n)].clone_from_slice(self);
             return Ok(3 + n);
         }
@@ -354,7 +416,7 @@ impl<'a> SerializeIntoSlice for Binary<'a> {
                 return Err(Error::EndOfBuffer);
             }
             buf[0] = Marker::Bin32.to_u8();
-            BigEndian::write_u32(&mut buf[1..], n32);
+            write_be_u32(&mut buf[1..], n32);
             buf[5..(5 + n)].clone_from_slice(self);
             return Ok(5 + n);
         }
@@ -413,7 +475,7 @@ impl SerializeIntoSlice for &str {
                         return Err(Error::EndOfBuffer);
                     }
                     buf[0] = Marker::Str16.to_u8();
-                    BigEndian::write_u16(&mut buf[1..], n16);
+                    write_be_u16(&mut buf[1..], n16);
                     buf[header_len..(header_len + n)].clone_from_slice(self.as_bytes());
                     return Ok(header_len + n);
                 }
@@ -424,7 +486,7 @@ impl SerializeIntoSlice for &str {
                         return Err(Error::EndOfBuffer);
                     }
                     buf[0] = Marker::Str32.to_u8();
-                    BigEndian::write_u32(&mut buf[1..], n32);
+                    write_be_u32(&mut buf[1..], n32);
                     buf[header_len..(header_len + n)].clone_from_slice(self.as_bytes());
                     return Ok(header_len + n);
                 }
@@ -528,13 +590,13 @@ pub fn serialize_array_start(n: usize, buf: &mut [u8]) -> Result<usize, Error> {
         #[cfg(feature = "array16")]
         if let Ok(n) = u16::try_from(n) {
             buf[0] = Marker::Array16.to_u8();
-            BigEndian::write_u16(&mut buf[1..], n);
+            write_be_u16(&mut buf[1..], n);
             return Ok(3);
         }
         #[cfg(feature = "array32")]
         if let Ok(n) = u32::try_from(n) {
             buf[0] = Marker::Array32.to_u8();
-            BigEndian::write_u32(&mut buf[1..], n);
+            write_be_u32(&mut buf[1..], n);
             return Ok(5);
         }
         unimplemented!()
@@ -559,13 +621,13 @@ pub fn serialize_map_start(n: usize, buf: &mut [u8]) -> Result<usize, Error> {
         #[cfg(feature = "map16")]
         if let Ok(n) = u16::try_from(n) {
             buf[0] = Marker::Map16.to_u8();
-            BigEndian::write_u16(&mut buf[1..], n);
+            write_be_u16(&mut buf[1..], n);
             return Ok(3);
         }
         #[cfg(feature = "map32")]
         if let Ok(n) = u32::try_from(n) {
             buf[0] = Marker::Map32.to_u8();
-            BigEndian::write_u32(&mut buf[1..], n);
+            write_be_u32(&mut buf[1..], n);
             return Ok(5);
         }
         unimplemented!()

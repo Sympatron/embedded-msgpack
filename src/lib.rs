@@ -4,8 +4,6 @@
 #![warn(clippy::missing_const_for_fn)]
 #![warn(clippy::missing_panics_doc)]
 
-extern crate zerocopy;
-
 pub mod decode;
 pub mod encode;
 #[cfg(feature = "ext")]

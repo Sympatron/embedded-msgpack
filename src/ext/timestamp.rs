@@ -1,10 +1,9 @@
 use super::ExtType;
 use crate::{
-    decode::Error as DeError,
-    encode::{Error as SerError, SerializeIntoSlice},
+    decode::{read_be_i64, read_be_u32, read_be_u64, Error as DeError},
+    encode::{write_be_i64, write_be_u32, write_be_u64, Error as SerError, SerializeIntoSlice},
     Ext,
 };
-use byteorder::{BigEndian, ByteOrder};
 use core::convert::{TryFrom, TryInto};
 
 const EXT_TIMESTAMP: ExtType = ExtType(-1);
@@ -45,14 +44,14 @@ impl Timestamp {
                 if data.len() < 4 {
                     return Err(SerError::EndOfBuffer);
                 }
-                BigEndian::write_u32(data, x as u32);
+                write_be_u32(data, x as u32);
                 Ok(Ext::new(-1, &data[0..4]))
             } else {
                 // timestamp 64
                 if data.len() < 8 {
                     return Err(SerError::EndOfBuffer);
                 }
-                BigEndian::write_u64(data, x);
+                write_be_u64(data, x);
                 Ok(Ext::new(-1, &data[0..8]))
             }
         } else {
@@ -62,8 +61,8 @@ impl Timestamp {
                 if data.len() < 12 {
                     return Err(SerError::EndOfBuffer);
                 }
-                BigEndian::write_u32(data, self.nanoseconds);
-                BigEndian::write_i64(&mut data[4..], self.seconds);
+                write_be_u32(data, self.nanoseconds);
+                write_be_i64(&mut data[4..], self.seconds);
                 return Ok(Ext::new(-1, &data[0..12]));
             }
             #[cfg(not(feature = "timestamp96"))]
@@ -95,7 +94,7 @@ impl<'a> TryFrom<Ext<'a>> for Timestamp {
                     // +--------+--------+--------+--------+--------+--------+
                     // |  0xd6  |   -1   |   seconds in 32-bit unsigned int  |
                     // +--------+--------+--------+--------+--------+--------+
-                    Timestamp::new(i64::from(BigEndian::read_u32(&ext.data)), 0)
+                    Timestamp::new(i64::from(read_be_u32(&ext.data)), 0)
                 }
                 #[allow(clippy::cast_possible_wrap)]
                 8 => {
@@ -104,7 +103,7 @@ impl<'a> TryFrom<Ext<'a>> for Timestamp {
                     // +--------+--------+--------+--------+--------+------|-+--------+--------+--------+--------+
                     // |  0xd7  |   -1   | nanosec. in 30-bit unsigned int |   seconds in 34-bit unsigned int    |
                     // +--------+--------+--------+--------+--------+------^-+--------+--------+--------+--------+
-                    let value = BigEndian::read_u64(&ext.data);
+                    let value = read_be_u64(&ext.data);
                     Timestamp::new((value & 0x0000_0003_ffff_ffff_u64) as i64, (value >> 34) as u32)
                 }
                 #[cfg(feature = "timestamp96")]
@@ -117,8 +116,8 @@ impl<'a> TryFrom<Ext<'a>> for Timestamp {
                     // +--------+--------+--------+--------+--------+--------+--------+--------+
                     // |                   seconds in 64-bit signed int                        |
                     // +--------+--------+--------+--------+--------+--------+--------+--------+
-                    let nanos = BigEndian::read_u32(&ext.data[0..4]);
-                    let s = BigEndian::read_i64(&ext.data[4..12]);
+                    let nanos = read_be_u32(&ext.data[0..4]);
+                    let s = read_be_i64(&ext.data[4..12]);
                     Timestamp::new(s, nanos)
                 }
                 _ => Err(DeError::InvalidType),

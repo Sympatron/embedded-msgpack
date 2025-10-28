@@ -15,7 +15,6 @@ edition = "2018"
 features = ["compliant"]
 
 [dependencies]
-byteorder = { version = "1", default-features = false }
 zerocopy = { version = "0.8", default-features = false }
 serde = { version = "1", default-features = false, optional = true, features = ["derive"] }
 serde_bytes = { version = "0.11", default-features = false, optional = true }
@@ -28,7 +27,7 @@ serde_json = { version = "1", default-features = false, features = ["std"] }
 
 [features]
 default = ["compliant", "serde", "serde_bytes"]
-std = ["byteorder/std", "serde_bytes/std", "serde/std", "derive-debug"]
+std = ["serde_bytes/std", "serde/std", "derive-debug"]
 alloc = ["serde/alloc", "serde_bytes/alloc"]
 u64 = []
 i64 = []

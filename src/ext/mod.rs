@@ -4,8 +4,6 @@ pub mod timestamp;
 use crate::encode::{Binary, Error, SerializeIntoSlice};
 #[allow(unused_imports)]
 use crate::marker::Marker;
-#[allow(unused_imports)]
-use byteorder::{BigEndian, ByteOrder};
 use core::{convert::TryInto, fmt::Display, marker::PhantomData};
 use serde::{ser::SerializeStruct, Deserialize, Serialize};
 
@@ -98,17 +96,21 @@ pub(crate) fn read_ext_len<B: zerocopy::SplitByteSlice>(buf: B) -> Result<(usize
         Marker::Ext8 => (3, buf[1] as usize),
         #[cfg(feature = "ext16")]
         Marker::Ext16 => {
+            use crate::decode::read_be_u16;
+
             if buf.len() < 4 {
                 return Err(crate::decode::Error::EndOfBuffer);
             }
-            (4, BigEndian::read_u16(&buf[1..3]) as usize)
+            (4, read_be_u16(&buf[1..3]) as usize)
         }
         #[cfg(feature = "ext32")]
         Marker::Ext32 => {
+            use crate::decode::read_be_u32;
+
             if buf.len() < 6 {
                 return Err(crate::decode::Error::EndOfBuffer);
             }
-            (6, BigEndian::read_u32(&buf[1..5]) as usize)
+            (6, read_be_u32(&buf[1..5]) as usize)
         }
         _ => return Err(crate::decode::Error::InvalidType),
     };
@@ -136,7 +138,9 @@ pub fn serialize_ext<'a>(value: &Ext<'a>, buf: &mut [u8]) -> Result<usize, Error
         }
         #[cfg(any(feature = "ext16", feature = "ext32"))]
         {
-            BigEndian::write_uint(&mut buf[1..], data.len() as u64, header_len - 2);
+            use crate::encode::write_be_uint;
+
+            write_be_uint(&mut buf[1..], data.len() as u64, header_len - 2);
         }
     }
     buf[header_len - 1] = typ as u8;
