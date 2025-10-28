@@ -4,7 +4,7 @@ mod serde;
 use crate::marker::Marker;
 
 use byteorder::{BigEndian, ByteOrder};
-use num_traits::cast::FromPrimitive;
+use core::convert::TryFrom;
 use zerocopy::SplitByteSlice;
 
 /// Error type indicating why deserialization failed
@@ -139,26 +139,26 @@ fn read_raw_ux(buf: &[u8], num_bytes: u8) -> Result<(usize, &[u8]), Error> {
 }
 
 #[inline(always)]
-pub fn read_int<B: SplitByteSlice, T: FromPrimitive>(buf: B) -> Result<(T, usize), Error> {
+pub fn read_int<B: SplitByteSlice, T: TryFrom<u64>>(buf: B) -> Result<(T, usize), Error> {
     match read_u64(buf) {
-        Ok((v, len)) => T::from_u64(v).map_or(Err(Error::OutOfBounds), |v| Ok((v, len))),
+        Ok((v, len)) => T::try_from(v).map_or(Err(Error::OutOfBounds), |v| Ok((v, len))),
         Err(kind) => Err(kind),
     }
 }
 #[cfg(feature = "i64")]
 #[inline(always)]
-pub fn read_sint<B: SplitByteSlice, T: FromPrimitive>(buf: B) -> Result<(T, usize), Error> {
+pub fn read_sint<B: SplitByteSlice, T: TryFrom<i64>>(buf: B) -> Result<(T, usize), Error> {
     match read_i64(buf) {
-        Ok((v, len)) => T::from_i64(v).map_or(Err(Error::OutOfBounds), |v| Ok((v, len))),
+        Ok((v, len)) => T::try_from(v).map_or(Err(Error::OutOfBounds), |v| Ok((v, len))),
         Err(kind) => Err(kind),
     }
 }
 #[cfg(not(feature = "i64"))]
 #[inline(always)]
-pub fn read_sint<B: SplitByteSlice, T: FromPrimitive>(buf: B) -> Result<(T, usize), Error> {
+pub fn read_sint<B: SplitByteSlice, T: TryFrom<i32>>(buf: B) -> Result<(T, usize), Error> {
     match read_i32(buf) {
         Ok((v, len)) => {
-            if let Some(v) = T::from_i32(v) {
+            if let Ok(v) = T::try_from(v) {
                 Ok((v, len))
             } else {
                 Err(Error::OutOfBounds)
@@ -211,7 +211,7 @@ pub fn read_u64<B: SplitByteSlice>(buf: B) -> Result<(u64, usize), Error> {
             }
         }
         _ => match read_i64(buf) {
-            Ok((i, l)) => u64::from_i64(i).map_or(Err(Error::OutOfBounds), |u| Ok((u, l))),
+            Ok((i, l)) => u64::try_from(i).map_or(Err(Error::OutOfBounds), |u| Ok((u, l))),
             Err(kind) => Err(kind),
         },
     }
@@ -252,7 +252,7 @@ pub fn read_i64<B: SplitByteSlice>(buf: B) -> Result<(i64, usize), Error> {
         Marker::U64 => {
             if buf.len() >= 9 {
                 let u = BigEndian::read_u64(&buf[1..9]);
-                i64::from_u64(u).map_or(Err(Error::OutOfBounds), |i| Ok((i, 9)))
+                i64::try_from(u).map_or(Err(Error::OutOfBounds), |i| Ok((i, 9)))
             } else {
                 Err(Error::EndOfBuffer)
             }

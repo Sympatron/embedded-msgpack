@@ -4,10 +4,10 @@ pub mod serde;
 use crate::marker::Marker;
 
 use byteorder::{BigEndian, ByteOrder};
-#[allow(unused_imports)]
-use core::convert::TryFrom;
-use core::{convert::From, ops::Deref};
-use num_traits::cast::FromPrimitive;
+use core::{
+    convert::{From, TryFrom},
+    ops::Deref,
+};
 
 /// Error type indicating why serialization failed
 #[derive(Debug)]
@@ -112,9 +112,9 @@ pub fn serialize_i8(value: i8, buf: &mut [u8]) -> Result<usize, Error> {
 }
 pub fn serialize_i16(value: i16, buf: &mut [u8]) -> Result<usize, Error> {
     // if value <= i8::max_value() as i16 && value >= i8::min_value() as i16 {
-    if let Some(value) = u16::from_i16(value) {
+    if let Ok(value) = u16::try_from(value) {
         serialize_u16(value, buf)
-    } else if let Some(value) = i8::from_i16(value) {
+    } else if let Ok(value) = i8::try_from(value) {
         serialize_i8(value, buf)
     } else {
         if buf.len() < 3 {
@@ -127,9 +127,9 @@ pub fn serialize_i16(value: i16, buf: &mut [u8]) -> Result<usize, Error> {
 }
 pub fn serialize_i32(value: i32, buf: &mut [u8]) -> Result<usize, Error> {
     // if value <= i16::max_value() as i32 && value >= i16::min_value() as i32 {
-    if let Some(value) = u32::from_i32(value) {
+    if let Ok(value) = u32::try_from(value) {
         serialize_u32(value, buf)
-    } else if let Some(value) = i16::from_i32(value) {
+    } else if let Ok(value) = i16::try_from(value) {
         serialize_i16(value, buf)
     } else {
         if buf.len() < 5 {
@@ -143,10 +143,10 @@ pub fn serialize_i32(value: i32, buf: &mut [u8]) -> Result<usize, Error> {
 #[cfg(feature = "i64")]
 pub fn serialize_i64(value: i64, buf: &mut [u8]) -> Result<usize, Error> {
     #[cfg(feature = "u64")]
-    if let Some(value) = u64::from_i64(value) {
+    if let Ok(value) = u64::try_from(value) {
         return serialize_u64(value, buf);
     }
-    if let Some(value) = i32::from_i64(value) {
+    if let Ok(value) = i32::try_from(value) {
         serialize_i32(value, buf)
     } else {
         if buf.len() < 9 {
