@@ -462,6 +462,32 @@ where T: SerializeIntoSlice
     }
 }
 
+impl<T, const N: usize> SerializeIntoSlice for [T; N]
+where T: SerializeIntoSlice
+{
+    fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { self.as_ref().write_into_slice(buf) }
+}
+
+#[cfg(feature = "heapless")]
+impl<T, const N: usize> SerializeIntoSlice for heapless::Vec<T, N>
+where T: SerializeIntoSlice
+{
+    fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { self.as_slice().write_into_slice(buf) }
+}
+
+#[cfg(feature = "alloc")]
+impl<T> SerializeIntoSlice for alloc::vec::Vec<T>
+where T: SerializeIntoSlice
+{
+    fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { self.as_slice().write_into_slice(buf) }
+}
+
+impl<T> SerializeIntoSlice for &T
+where T: SerializeIntoSlice
+{
+    fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { (*self).write_into_slice(buf) }
+}
+
 #[derive(Copy, Clone)]
 pub enum SequenceType {
     Array,
