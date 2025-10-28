@@ -214,7 +214,7 @@ where T: ::serde::ser::Serialize + ?Sized {
 impl ::serde::ser::Error for Error {
     fn custom<T>(_msg: T) -> Self
     where T: core::fmt::Display {
-        unimplemented!()
+        panic!()
     }
 }
 

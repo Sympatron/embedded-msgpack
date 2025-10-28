@@ -428,7 +428,7 @@ impl<'a> SerializeIntoSlice for Binary<'a> {
             buf[5..(5 + n)].clone_from_slice(self);
             return Ok(5 + n);
         }
-        unimplemented!()
+        Err(Error::OutOfBounds)
     }
 }
 
@@ -498,7 +498,7 @@ impl SerializeIntoSlice for &str {
                     buf[header_len..(header_len + n)].clone_from_slice(self.as_bytes());
                     return Ok(header_len + n);
                 }
-                unimplemented!()
+                Err(Error::OutOfBounds)
             }
         }
     }
@@ -607,7 +607,7 @@ pub fn serialize_array_start(n: usize, buf: &mut [u8]) -> Result<usize, Error> {
             write_be_u32(&mut buf[1..], n);
             return Ok(5);
         }
-        unimplemented!()
+        Err(Error::OutOfBounds)
     }
 }
 
@@ -638,7 +638,7 @@ pub fn serialize_map_start(n: usize, buf: &mut [u8]) -> Result<usize, Error> {
             write_be_u32(&mut buf[1..], n);
             return Ok(5);
         }
-        unimplemented!()
+        Err(Error::OutOfBounds)
     }
 }
 pub fn serialize_map_kay_value<K: SerializeIntoSlice, V: SerializeIntoSlice>(key: &K, value: &V, buf: &mut [u8]) -> Result<usize, Error> {
