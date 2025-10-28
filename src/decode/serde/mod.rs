@@ -298,12 +298,8 @@ impl fmt::Display for Error {
                 #[cfg(feature = "custom-error-messages")]
                 Error::CustomErrorWithMessage(msg) => msg.as_str(),
                 Error::NotAscii => "String contains non-ascii chars.",
-                Error::InvalidBoolean => "Invalid boolean marker.",
-                Error::InvalidBinType => "Invalid binary marker.",
-                Error::InvalidStringType => "Invalid string marker.",
-                Error::InvalidArrayType => "Invalid array marker.",
-                Error::InvalidMapType => "Invalid map marker.",
                 Error::InvalidNewTypeLength => "Invalid array length for newtype.",
+                Error::UnsupportedType => "The data type is not supported by this deserializer.",
             }
         )
     }

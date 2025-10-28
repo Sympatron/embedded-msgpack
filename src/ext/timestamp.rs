@@ -1,7 +1,7 @@
 use super::ExtType;
 use crate::{
-    decode::{read_be_i64, read_be_u32, read_be_u64, Error as DeError},
-    encode::{write_be_i64, write_be_u32, write_be_u64, Error as SerError, SerializeIntoSlice},
+    decode::{read_be_u32, read_be_u64, Error as DeError},
+    encode::{write_be_u32, write_be_u64, Error as SerError, SerializeIntoSlice},
     Ext,
 };
 use core::convert::{TryFrom, TryInto};
@@ -58,6 +58,8 @@ impl Timestamp {
             // timestamp 96
             #[cfg(feature = "timestamp96")]
             {
+                use crate::encode::write_be_i64;
+
                 if data.len() < 12 {
                     return Err(SerError::EndOfBuffer);
                 }
@@ -116,6 +118,8 @@ impl<'a> TryFrom<Ext<'a>> for Timestamp {
                     // +--------+--------+--------+--------+--------+--------+--------+--------+
                     // |                   seconds in 64-bit signed int                        |
                     // +--------+--------+--------+--------+--------+--------+--------+--------+
+
+                    use crate::decode::read_be_i64;
                     let nanos = read_be_u32(&ext.data[0..4]);
                     let s = read_be_i64(&ext.data[4..12]);
                     Timestamp::new(s, nanos)

@@ -23,11 +23,7 @@ pub enum Error {
     #[cfg(feature = "custom-error-messages")]
     CustomErrorWithMessage(heapless::String<64>),
     NotAscii,
-    InvalidBoolean,
-    InvalidBinType,
-    InvalidStringType,
-    InvalidArrayType,
-    InvalidMapType,
+    UnsupportedType,
     InvalidNewTypeLength,
 }
 
@@ -207,7 +203,7 @@ pub fn read_bool<B: SplitByteSlice>(buf: B) -> Result<(bool, usize), Error> {
     match Marker::from(buf[0]) {
         Marker::True => Ok((true, 1)),
         Marker::False => Ok((false, 1)),
-        _ => Err(Error::InvalidBoolean),
+        _ => Err(Error::InvalidType),
     }
 }
 
@@ -266,6 +262,7 @@ pub fn read_i64<B: SplitByteSlice>(buf: B) -> Result<(i64, usize), Error> {
                 Err(Error::EndOfBuffer)
             }
         }
+        #[cfg(feature = "u64")]
         Marker::U64 => {
             if buf.len() >= 9 {
                 let u = read_be_u64(&buf[1..9]);
@@ -274,6 +271,8 @@ pub fn read_i64<B: SplitByteSlice>(buf: B) -> Result<(i64, usize), Error> {
                 Err(Error::EndOfBuffer)
             }
         }
+        #[cfg(not(feature = "u64"))]
+        Marker::U64 => Err(Error::UnsupportedType),
         #[allow(clippy::cast_possible_wrap)]
         Marker::I8 => {
             if buf.len() >= 2 {
@@ -296,6 +295,7 @@ pub fn read_i64<B: SplitByteSlice>(buf: B) -> Result<(i64, usize), Error> {
                 Err(Error::EndOfBuffer)
             }
         }
+        #[cfg(feature = "i64")]
         Marker::I64 => {
             if buf.len() >= 9 {
                 Ok((read_be_i64(&buf[1..9]), 9))
@@ -303,7 +303,9 @@ pub fn read_i64<B: SplitByteSlice>(buf: B) -> Result<(i64, usize), Error> {
                 Err(Error::EndOfBuffer)
             }
         }
-        _ => Err(Error::EndOfBuffer),
+        #[cfg(not(feature = "i64"))]
+        Marker::I64 => Err(Error::UnsupportedType),
+        _ => Err(Error::InvalidType),
     }
 }
 
@@ -321,7 +323,7 @@ pub fn read_f32<B: SplitByteSlice>(buf: B) -> Result<(f32, usize), Error> {
                 Err(Error::EndOfBuffer)
             }
         }
-        _ => Err(Error::EndOfBuffer),
+        _ => Err(Error::InvalidType),
     }
 }
 pub fn read_f64<B: SplitByteSlice>(buf: B) -> Result<(f64, usize), Error> {
@@ -346,7 +348,7 @@ pub fn read_f64<B: SplitByteSlice>(buf: B) -> Result<(f64, usize), Error> {
                 Err(Error::EndOfBuffer)
             }
         }
-        _ => Err(Error::EndOfBuffer),
+        _ => Err(Error::InvalidType),
     }
 }
 
@@ -383,6 +385,7 @@ pub fn read_bin<B: SplitByteSlice>(buf: B) -> Result<(B, usize), Error> {
                 Err(Error::EndOfBuffer)
             }
         }
+        #[cfg(any(feature = "bin16", feature = "str16"))]
         Marker::Bin16 | Marker::Str16 => {
             let header_len = 3;
             if buf.len() < header_len {
@@ -398,7 +401,9 @@ pub fn read_bin<B: SplitByteSlice>(buf: B) -> Result<(B, usize), Error> {
                 Err(Error::EndOfBuffer)
             }
         }
-        #[cfg(feature = "bin32")]
+        #[cfg(not(any(feature = "bin16", feature = "str16")))]
+        Marker::Bin16 | Marker::Str16 => Err(Error::UnsupportedType),
+        #[cfg(any(feature = "bin32", feature = "str32"))]
         Marker::Bin32 | Marker::Str32 => {
             let header_len = 5;
             if buf.len() < header_len {
@@ -413,7 +418,9 @@ pub fn read_bin<B: SplitByteSlice>(buf: B) -> Result<(B, usize), Error> {
                 Err(Error::EndOfBuffer)
             }
         }
-        _ => Err(Error::InvalidBinType),
+        #[cfg(not(any(feature = "bin32", feature = "str32")))]
+        Marker::Bin32 | Marker::Str32 => Err(Error::UnsupportedType),
+        _ => Err(Error::InvalidType),
     }
 }
 
@@ -446,6 +453,7 @@ pub fn read_str(buf: &[u8]) -> Result<(&str, usize), Error> {
                 return Err(Error::EndOfBuffer);
             }
         }
+        #[cfg(feature = "str16")]
         Marker::Str16 => {
             let header_len = 3;
             if buf.len() < header_len {
@@ -458,6 +466,8 @@ pub fn read_str(buf: &[u8]) -> Result<(&str, usize), Error> {
                 return Err(Error::EndOfBuffer);
             }
         }
+        #[cfg(not(feature = "str16"))]
+        Marker::Str16 => return Err(Error::UnsupportedType),
         #[cfg(feature = "str32")]
         Marker::Str32 => {
             let header_len = 5;
@@ -471,7 +481,9 @@ pub fn read_str(buf: &[u8]) -> Result<(&str, usize), Error> {
                 return Err(Error::EndOfBuffer);
             }
         }
-        _ => return Err(Error::InvalidStringType),
+        #[cfg(not(feature = "str32"))]
+        Marker::Str32 => return Err(Error::UnsupportedType),
+        _ => return Err(Error::InvalidType),
     };
     let buf = &buf[header_len..header_len + len];
     let s = if buf.is_ascii() {
@@ -513,6 +525,8 @@ pub fn read_array_len<B: SplitByteSlice>(buf: B) -> Result<(usize, usize), Error
                 return Err(Error::EndOfBuffer);
             }
         }
+        #[cfg(not(feature = "array16"))]
+        Marker::Array16 => return Err(Error::UnsupportedType),
         #[cfg(feature = "array32")]
         Marker::Array32 => {
             let header_len = 5;
@@ -526,7 +540,9 @@ pub fn read_array_len<B: SplitByteSlice>(buf: B) -> Result<(usize, usize), Error
                 return Err(Error::EndOfBuffer);
             }
         }
-        _ => return Err(Error::InvalidArrayType),
+        #[cfg(not(feature = "array32"))]
+        Marker::Array32 => return Err(Error::UnsupportedType),
+        _ => return Err(Error::InvalidType),
     };
     Ok((len, header_len))
 }
@@ -552,6 +568,8 @@ pub fn read_map_len<B: SplitByteSlice>(buf: B) -> Result<(usize, usize), Error> 
             let len = read_be_u16(&buf[1..header_len]) as usize;
             (len, header_len)
         }
+        #[cfg(not(feature = "map16"))]
+        Marker::Map16 => return Err(Error::UnsupportedType),
         #[cfg(feature = "map32")]
         Marker::Map32 => {
             let header_len = 5;
@@ -561,7 +579,9 @@ pub fn read_map_len<B: SplitByteSlice>(buf: B) -> Result<(usize, usize), Error> 
             let len = read_be_u32(&buf[1..header_len]) as usize;
             (len, header_len)
         }
-        _ => return Err(Error::InvalidMapType),
+        #[cfg(not(feature = "map32"))]
+        Marker::Map32 => return Err(Error::UnsupportedType),
+        _ => return Err(Error::InvalidType),
     };
     if buf.len() >= header_len + len {
         Ok((len, header_len))

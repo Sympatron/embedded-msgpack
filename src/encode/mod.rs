@@ -17,6 +17,7 @@ pub enum Error {
     OutOfBounds,
     /// Happens if the data type can not be serialized. For example if a sequence is not sized.
     InvalidType,
+    UnsupportedType,
 }
 
 impl ::core::fmt::Display for Error {
@@ -25,6 +26,7 @@ impl ::core::fmt::Display for Error {
             Error::OutOfBounds => f.write_str("Out of bounds"),
             Error::InvalidType => f.write_str("Invalid type"),
             Error::EndOfBuffer => f.write_str("End of buffer"),
+            Error::UnsupportedType => f.write_str("Unsupported type"),
         }
     }
 }
