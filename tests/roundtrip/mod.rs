@@ -122,6 +122,7 @@ fn roundtrip_i64() {
     test_roundtrip(-9223372036854775807i64);
     test_roundtrip(-9223372036854775808i64);
 }
+#[cfg(feature = "f32")]
 #[test]
 fn roundtrip_float() {
     test_roundtrip(0.5f32);

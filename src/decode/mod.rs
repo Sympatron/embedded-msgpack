@@ -309,6 +309,7 @@ pub fn read_i64<B: SplitByteSlice>(buf: B) -> Result<(i64, usize), Error> {
     }
 }
 
+#[cfg(feature = "f32")]
 pub fn read_f32<B: SplitByteSlice>(buf: B) -> Result<(f32, usize), Error> {
     if buf.len() == 0 {
         return Err(Error::EndOfBuffer);
@@ -326,6 +327,9 @@ pub fn read_f32<B: SplitByteSlice>(buf: B) -> Result<(f32, usize), Error> {
         _ => Err(Error::InvalidType),
     }
 }
+#[cfg(not(feature = "f32"))]
+pub fn read_f32<B: SplitByteSlice>(_buf: B) -> Result<(f32, usize), Error> { Err(Error::UnsupportedType) }
+#[cfg(feature = "f64")]
 pub fn read_f64<B: SplitByteSlice>(buf: B) -> Result<(f64, usize), Error> {
     if buf.len() == 0 {
         return Err(Error::EndOfBuffer);
@@ -334,11 +338,16 @@ pub fn read_f64<B: SplitByteSlice>(buf: B) -> Result<(f64, usize), Error> {
     let marker = Marker::from(buf[0]);
     match marker {
         Marker::F32 => {
+            #[cfg(feature = "f32")]
             if buf.len() >= 5 {
                 let v = read_be_f32(&buf[1..5]);
                 Ok((f64::from(v), 5))
             } else {
                 Err(Error::EndOfBuffer)
+            }
+            #[cfg(not(feature = "f32"))]
+            {
+                Err(Error::UnsupportedType)
             }
         }
         Marker::F64 => {
@@ -351,6 +360,8 @@ pub fn read_f64<B: SplitByteSlice>(buf: B) -> Result<(f64, usize), Error> {
         _ => Err(Error::InvalidType),
     }
 }
+#[cfg(not(feature = "f64"))]
+pub fn read_f64<B: SplitByteSlice>(_buf: B) -> Result<(f64, usize), Error> { Err(Error::UnsupportedType) }
 
 pub fn read_bin<B: SplitByteSlice>(buf: B) -> Result<(B, usize), Error> {
     if buf.len() == 0 {

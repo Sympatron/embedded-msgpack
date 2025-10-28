@@ -92,8 +92,10 @@ pub(crate) fn write_be_uint(buf: &mut [u8], n: u64, nbytes: usize) {
     }
 }
 
+#[cfg(feature = "f32")]
 #[inline]
 pub(crate) fn write_be_f32(buf: &mut [u8], n: f32) { buf[..4].copy_from_slice(&n.to_be_bytes()); }
+#[cfg(feature = "f64")]
 #[inline]
 pub(crate) fn write_be_f64(buf: &mut [u8], n: f64) { buf[..8].copy_from_slice(&n.to_be_bytes()); }
 
@@ -221,6 +223,7 @@ pub fn serialize_i64(value: i64, buf: &mut [u8]) -> Result<usize, Error> {
         Ok(9)
     }
 }
+#[cfg(feature = "f32")]
 pub fn serialize_f32(value: f32, buf: &mut [u8]) -> Result<usize, Error> {
     if buf.len() < 5 {
         return Err(Error::EndOfBuffer);
@@ -229,6 +232,7 @@ pub fn serialize_f32(value: f32, buf: &mut [u8]) -> Result<usize, Error> {
     write_be_f32(&mut buf[1..], value);
     Ok(5)
 }
+#[cfg(feature = "f64")]
 pub fn serialize_f64(value: f64, buf: &mut [u8]) -> Result<usize, Error> {
     if buf.len() < 9 {
         return Err(Error::EndOfBuffer);
@@ -273,10 +277,12 @@ impl SerializeIntoSlice for i64 {
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_i64(*self, buf) }
 }
 
+#[cfg(feature = "f32")]
 impl SerializeIntoSlice for f32 {
     #[inline(always)]
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_f32(*self, buf) }
 }
+#[cfg(feature = "f64")]
 impl SerializeIntoSlice for f64 {
     #[inline(always)]
     fn write_into_slice(&self, buf: &mut [u8]) -> Result<usize, Error> { serialize_f64(*self, buf) }
